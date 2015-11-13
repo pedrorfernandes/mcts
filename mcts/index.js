@@ -3,6 +3,11 @@
 'use strict';
 
 var _ = require('lodash');
+var randomGenerator = require('seedrandom');
+var shuffle = require('./shuffle');
+var sample = function(array, rng) {
+  return array[Math.floor(rng() * array.length)];
+};
 
 function Node(options) {
   this.game = _.extend(new options.game.constructor(), _.cloneDeep(options.game));
@@ -39,11 +44,12 @@ Node.prototype.expand = function() {
     return index;
   });
 
-  var moveIndex = _(possibleMovesIndexArray)
-    .filter(function(index) {
+  var moveIndex = sample(
+    possibleMovesIndexArray.filter(function(index) {
       return isNotExpanded(children[index]);
-    })
-    .sample();
+    }),
+    this.mcts.rng
+  );
 
   var expanded = new Node({
     game: this.game,
@@ -79,7 +85,7 @@ Node.prototype.getReward = function() {
 };
 
 Node.prototype.pickChild = function() {
-  var move = _.sample(this.game.getPossibleMoves());
+  var move = sample(this.game.getPossibleMoves(), this.mcts.rng);
 
   return new Node({
     game: this.game,
@@ -115,9 +121,8 @@ Node.prototype.getChildNodes = function() {
 };
 
 Node.prototype.bestChild = function(explorationValue) {
-  return _(this.getChildNodes())
-    .shuffle()
-    .max(nodeValue.bind(null, explorationValue));
+  var shuffled = shuffle(this.getChildNodes(), this.mcts.rng);
+  return _.max(shuffled, nodeValue.bind(null, explorationValue));
 };
 
 var nodeValue = function(explorationValue, node) {
@@ -127,7 +132,7 @@ var nodeValue = function(explorationValue, node) {
   return - node.visits;
 };
 
-var EXPLORATION_VALUE = 0.70710678118;
+var EXPLORATION_VALUE = Math.sqrt(2);
 var NO_EXPLORATION = 0;
 var getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
@@ -139,10 +144,11 @@ var getUCB1 = function (explorationValue, node) {
   }
 };
 
-function MCTS(game, iterations, player) {
+function MCTS(game, iterations, player, seed) {
   this.game = game;
   this.iterations = iterations || 1000;
   this.player = player || 0;
+  this.rng = seed ? randomGenerator(seed) : randomGenerator();
 }
 
 MCTS.prototype.selectMove = function () {

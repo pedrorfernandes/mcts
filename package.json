@@ -5,7 +5,8 @@
   "repository": "https://github.com/dbravender/mcts",
   "main": "mcts/index.js",
   "dependencies": {
-    "lodash": "^3.5.0"
+    "lodash": "^3.5.0",
+    "seedrandom": "^2.4.2"
   },
   "devDependencies": {
     "jslint": "^0.9.0-pre005",
