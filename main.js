@@ -8,20 +8,38 @@ var rng = seedrandom();
 
 var Sueca = require('./test/sueca').Sueca;
 
-var sueca = new Sueca();
+var seed = 0.9981069023819238;//rng();
+var sueca = new Sueca(seed);
+console.log(seed);
+console.log('Trumps are ' + sueca.trump);
+var round = 0;
+
+sueca.setObserver({
+    roundWinner: function(event) {
+        console.log(event.roundWinner
+            + ' won the round with ' + event.highestCard
+            + ' and took ' + event.pointsWon + ' points!');
+    }
+});
 
 while(!sueca.getWinner()) {
-    var mcts = new MCTS(sueca, 10000, 0);
-    if (sueca.currentPlayer === 0) {
-        console.log('\nNext Round');
+    var mcts = new MCTS(sueca, 10000, 0, seed);
+    if (round !== sueca.round) {
+        round = sueca.round;
+        console.log('\nRound ' + round);
     }
 
     console.time('selectMove');
     var move = mcts.selectMove();
     console.timeEnd('selectMove');
-    console.log(sueca.currentPlayer + ' played ' + move + '\n');
+    console.log(sueca.getPrettyPlayerHand(sueca.currentPlayer));
+    console.log(sueca.currentPlayer + ' played ' + move  + '\n');
     sueca.performMove(move);
 }
+
+var winners = sueca.getWinner();
+
+console.log('\n' + winners + ' have won the match with ' + sueca.getPoints(winners));
 
 /*
 var move = [2, 0];
