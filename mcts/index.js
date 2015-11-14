@@ -126,7 +126,7 @@ Node.prototype.getChildNodes = function() {
 };
 
 Node.prototype.bestChild = function(explorationValue) {
-  var shuffled = shuffle(this.getChildNodes(), this.mcts.rng);
+  var shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
   return _.max(shuffled, nodeValue.bind(null, explorationValue));
 };
 
