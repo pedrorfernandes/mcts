@@ -10,7 +10,7 @@ var sample = function(array, rng) {
 };
 
 function Node(options) {
-  this.game = _.extend(new options.game.constructor(), _.cloneDeep(options.game));
+  this.game = new options.game.constructor(options.game);
   this.mcts = options.mcts;
   this.parent = options.parent || null;
   this.move = typeof options.move != 'undefined' ? options.move : null;
@@ -78,7 +78,12 @@ function treePolicy(node) {
 }
 
 Node.prototype.getReward = function() {
-  if (this.mcts.player === this.game.getWinner()) {
+  var winner = this.game.getWinner();
+
+  if (Array.isArray(winner) && _.contains(winner, this.mcts.player)) {
+    return 1;
+  }
+  else if (this.mcts.player === winner) {
     return 1;
   }
   return 0;
@@ -147,7 +152,7 @@ var getUCB1 = function (explorationValue, node) {
 function MCTS(game, iterations, player, seed) {
   this.game = game;
   this.iterations = iterations || 1000;
-  this.player = player || 0;
+  this.player = typeof player == 'undefined' ? 0 : player;
   this.rng = seed ? randomGenerator(seed) : randomGenerator();
 }
 
