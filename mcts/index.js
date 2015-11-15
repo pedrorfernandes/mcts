@@ -5,6 +5,7 @@
 var _ = require('lodash');
 var randomGenerator = require('seedrandom');
 var shuffle = require('./shuffle');
+
 var sample = function(array, rng) {
   return array[Math.floor(rng() * array.length)];
 };
@@ -56,8 +57,7 @@ Node.prototype.expand = function() {
     parent: this,
     move: this.possibleMoves[moveIndex],
     depth: this.depth + 1,
-    mcts: this.mcts,
-    expanded: true
+    mcts: this.mcts
   });
 
   children[moveIndex] = expanded;
@@ -90,7 +90,7 @@ Node.prototype.getReward = function() {
 };
 
 Node.prototype.pickChild = function() {
-  var move = sample(this.game.getPossibleMoves(), this.mcts.rng);
+  var move = sample(this.game.getPossibleMoves(this.mcts.player), this.mcts.rng);
 
   return new Node({
     game: this.game,
@@ -119,7 +119,7 @@ Node.prototype.backPropagate = function(reward) {
 
 Node.prototype.getChildNodes = function() {
   if (!this.children) {
-    this.possibleMoves = this.game.getPossibleMoves();
+    this.possibleMoves = this.game.getPossibleMoves(this.mcts.player);
     this.children = _.fill(new Array(this.possibleMoves.length), null);
   }
   return this.children;

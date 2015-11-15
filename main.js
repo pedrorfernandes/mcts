@@ -23,7 +23,7 @@ sueca.setObserver({
 });
 
 while(!sueca.getWinner()) {
-    var mcts = new MCTS(sueca, 100000, sueca.currentPlayer, seed);
+    var mcts = new MCTS(sueca, 20000, sueca.currentPlayer, seed);
     if (round !== sueca.round) {
         round = sueca.round;
         console.log('\nRound ' + round);

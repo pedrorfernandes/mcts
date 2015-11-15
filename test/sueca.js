@@ -28,8 +28,8 @@ var valuesScale = {
   'A': 10, '7': 9, 'K': 8, 'J': 7, 'Q': 6, '6': 5, '5': 4, '4': 3, '3': 2, '2': 1
 };
 
-var  ranks = ['A', '7', 'K', 'J', 'Q', '6', '5', '4', '3', '2'];
-var  suits = ['♠', '♥', '♦', '♣'];
+var ranks = ['A', '7', 'K', 'J', 'Q', '6', '5', '4', '3', '2'];
+var suits = ['♠', '♥', '♦', '♣'];
 
 var startingDeck = suits.reduce(function(deck, suit) {
   return deck.concat(ranks.map(function(rank) {
@@ -50,6 +50,9 @@ function Sueca(options) {
     this.wonCards = [[], [], [], []];
     this.round = 1;
     this.suitToFollow = null;
+    this.hasSuits = new Array(4).fill({
+      '♠': true, '♥': true, '♦': true, '♣': true
+    })
   }
 }
 
@@ -73,6 +76,14 @@ Sueca.prototype.clone = function(game) {
   this.wonCards = copyHands(game.wonCards);
   this.round = game.round;
   this.suitToFollow = game.suitToFollow;
+  this.hasSuits = game.hasSuits.map(function(playerHasSuits) {
+    return {
+      '♠': playerHasSuits['♠'],
+      '♥': playerHasSuits['♥'],
+      '♦': playerHasSuits['♦'],
+      '♣': playerHasSuits['♣']
+    }
+  })
 };
 
 Sueca.prototype.getCardsInTableCount = function () {
@@ -84,25 +95,46 @@ Sueca.prototype.getCardsInTableCount = function () {
   }, 0);
 };
 
-Sueca.prototype.getPossibleMoves = function () {
-  var hand = this.hands[this.currentPlayer];
-  if (this.getCardsInTableCount() === 0) {
-    return hand;
-  }
-  else {
-    var cardsOfSuit = [];
-    if (this.suitToFollow) {
-      cardsOfSuit = hand.filter(function (card) {
-        return getSuit(card) === this.suitToFollow
-      }, this);
-    }
+Sueca.prototype.getPossibilities = function(playerPerspective) {
+  var playerPerspectiveHand = this.hands[playerPerspective];
+  var playedCards = _.flatten(this.wonCards);
+  var inRoundCards = this.table.filter(function(card) { return card !== null });
+  var hasSuits = this.hasSuits[this.currentPlayer];
 
-    if (_.isEmpty(cardsOfSuit)) {
+  var impossibilities = playerPerspectiveHand
+      .concat(playedCards).concat(inRoundCards);
+
+  return startingDeck.filter(function(card) {
+    var suit = getSuit(card);
+    return hasSuits[suit] && impossibilities.indexOf(card) === -1;
+  });
+};
+
+Sueca.prototype.getPossibleMoves = function (playerPerspective) {
+  if (typeof playerPerspective == 'undefined') throw new Error('missing argument');
+  if (playerPerspective === this.currentPlayer) {
+    var hand = this.hands[this.currentPlayer];
+    if (this.getCardsInTableCount() === 0) {
       return hand;
     }
     else {
-      return cardsOfSuit;
+      var cardsOfSuit = [];
+      if (this.suitToFollow) {
+        cardsOfSuit = hand.filter(function (card) {
+          return getSuit(card) === this.suitToFollow
+        }, this);
+      }
+
+      if (_.isEmpty(cardsOfSuit)) {
+        return hand;
+      }
+      else {
+        return cardsOfSuit;
+      }
     }
+  }
+  else {
+    return this.getPossibilities(playerPerspective);
   }
 };
 
@@ -132,11 +164,20 @@ Sueca.prototype.notifyObserver = function(event) {
   }
 };
 
+Sueca.prototype.updatePlayerHasSuits = function(card) {
+  var playedSuit = getSuit(card);
+  if (this.suitToFollow && this.suitToFollow !== playedSuit) {
+    this.hasSuits[this.currentPlayer][this.suitToFollow] = false;
+  }
+};
+
 Sueca.prototype.performMove = function (card) {
   this.table[this.currentPlayer] = card;
 
   var hand = this.hands[this.currentPlayer];
   hand.splice(hand.indexOf(card), 1);
+
+  this.updatePlayerHasSuits(card);
 
   var cardsInTableCount = this.getCardsInTableCount();
 
@@ -145,12 +186,16 @@ Sueca.prototype.performMove = function (card) {
     var roundWinner = this.table.indexOf(highestCard);
     this.wonCards[roundWinner] = this.wonCards[roundWinner].concat(this.table);
 
-    this.notifyObserver({
-      type: 'roundWinner',
-      roundWinner: roundWinner,
-      highestCard: highestCard,
-      pointsWon: _.sum(this.table, function(card) { return getValue(card) })
-    });
+    if (this.observer) {
+      this.notifyObserver({
+        type: 'roundWinner',
+        roundWinner: roundWinner,
+        highestCard: highestCard,
+        pointsWon: _.sum(this.table, function (card) {
+          return getValue(card)
+        })
+      });
+    }
 
     this.table = [null, null, null, null];
     this.currentPlayer = roundWinner;
