@@ -37,16 +37,22 @@ var startingDeck = suits.reduce(function(deck, suit) {
   }));
 }, []);
 
+var isRandomNumberGenerator = function(object) {
+  return typeof object !== 'object';
+};
+
 function Sueca(options) {
-  if (options instanceof Sueca) {
+  if (!isRandomNumberGenerator(options)) {
     this.clone(options);
   } else {
     var seed = options;
     this.currentPlayer = 0;
     var rng = seed ? randomGenerator(seed) : randomGenerator();
     this.hands = _.chunk(shuffle(startingDeck, rng), 10);
-    this.trump = getSuit(_.last(_.last(this.hands)));
-    this.table = [null, null, null, null];
+    this.trumpCard = _.last(_.last(this.hands));
+    this.trumpPlayer = 3;
+    this.trump = getSuit(this.trumpCard);
+    this.trick = [null, null, null, null];
     this.wonCards = [[], [], [], []];
     this.round = 1;
     this.suitToFollow = null;
@@ -72,7 +78,10 @@ Sueca.prototype.clone = function(game) {
   this.currentPlayer = game.currentPlayer;
   this.hands = copyHands(game.hands);
   this.trump = game.trump;
-  this.table =  game.table.slice();
+  this.trick =  game.trick.slice();
+  this.trumpCard = game.trumpCard;
+  this.trumpPlayer = game.trumpPlayer;
+  this.trump = game.trump;
   this.wonCards = copyHands(game.wonCards);
   this.round = game.round;
   this.suitToFollow = game.suitToFollow;
@@ -87,7 +96,7 @@ Sueca.prototype.clone = function(game) {
 };
 
 Sueca.prototype.getCardsInTableCount = function () {
-  return this.table.reduce(function(count, card) {
+  return this.trick.reduce(function(count, card) {
     if (card !== null) {
       return count + 1;
     }
@@ -98,11 +107,15 @@ Sueca.prototype.getCardsInTableCount = function () {
 Sueca.prototype.getPossibilities = function(playerPerspective) {
   var playerPerspectiveHand = this.hands[playerPerspective];
   var playedCards = _.flatten(this.wonCards);
-  var inRoundCards = this.table.filter(function(card) { return card !== null });
+  var inRoundCards = this.trick.filter(function(card) { return card !== null });
   var hasSuits = this.hasSuits[this.currentPlayer];
+  var trumpCard = [];
+  if (this.currentPlayer !== this.trumpPlayer) {
+    trumpCard = [this.trumpCard];
+  }
 
   var impossibilities = playerPerspectiveHand
-      .concat(playedCards).concat(inRoundCards);
+      .concat(playedCards).concat(inRoundCards).concat(trumpCard);
 
   return startingDeck.filter(function(card) {
     var suit = getSuit(card);
@@ -172,7 +185,7 @@ Sueca.prototype.updatePlayerHasSuits = function(card) {
 };
 
 Sueca.prototype.performMove = function (card) {
-  this.table[this.currentPlayer] = card;
+  this.trick[this.currentPlayer] = card;
 
   var hand = this.hands[this.currentPlayer];
   hand.splice(hand.indexOf(card), 1);
@@ -182,22 +195,22 @@ Sueca.prototype.performMove = function (card) {
   var cardsInTableCount = this.getCardsInTableCount();
 
   if (cardsInTableCount === 4) {
-    var highestCard = this.getHighestCard(this.table, this.suitToFollow);
-    var roundWinner = this.table.indexOf(highestCard);
-    this.wonCards[roundWinner] = this.wonCards[roundWinner].concat(this.table);
+    var highestCard = this.getHighestCard(this.trick, this.suitToFollow);
+    var roundWinner = this.trick.indexOf(highestCard);
+    this.wonCards[roundWinner] = this.wonCards[roundWinner].concat(this.trick);
 
     if (this.observer) {
       this.notifyObserver({
         type: 'roundWinner',
         roundWinner: roundWinner,
         highestCard: highestCard,
-        pointsWon: _.sum(this.table, function (card) {
+        pointsWon: _.sum(this.trick, function (card) {
           return getValue(card)
         })
       });
     }
 
-    this.table = [null, null, null, null];
+    this.trick = [null, null, null, null];
     this.currentPlayer = roundWinner;
     this.round += 1;
     this.suitToFollow = null;

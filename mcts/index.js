@@ -35,7 +35,7 @@ Node.prototype.isExpandable = function() {
 };
 
 Node.prototype.isTerminal = function() {
-  return this.game.getWinner() != null || _.isEmpty(this.getChildNodes());
+  return /* this.game.getWinner() != null || */ _.isEmpty(this.getChildNodes());
 };
 
 Node.prototype.expand = function() {
