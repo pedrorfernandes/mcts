@@ -44,7 +44,7 @@ var mapPlayer = function(player) {
   return player - 1;
 };
 
-var movesCount = 1;
+var movesCount = 2;
 
 var gameInterface = {
   'start': function(event, callback) {

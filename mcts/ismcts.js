@@ -163,7 +163,7 @@ function ISMCTS(game, iterations, player, seed) {
   this.game = game;
   this.iterations = iterations || 1000;
   this.player = typeof player == 'undefined' ? 0 : player;
-  this.rng = seed ? randomGenerator(seed) : randomGenerator();
+  this.rng = seed ? randomGenerator(seed, {state: true}) : randomGenerator(null, {state: true});
 }
 
 ISMCTS.prototype.selectMove = function () {

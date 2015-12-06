@@ -286,24 +286,13 @@ Sueca.prototype.randomize = function(rng, player) {
 
   unPlayedCards = shuffle(unPlayedCards, rng);
 
-  var hasSuits = this.hasSuits;
-
-  this.hands = this.hands.map(function distributeCards(hand, player) {
-    var numberOfCardsToTake =  numberOfCardsInEachHand - hand.length;
-    if (numberOfCardsToTake > 0) {
-      // take N cards from cards to distribute
-      unPlayedCards = unPlayedCards.reduce(function(remaining, card) {
-        if (hand.length < numberOfCardsInEachHand && hasSuits[player][getSuit(card)]) {
-          hand.push(card);
-        }
-        else {
-          remaining.push(card);
-        }
-        return remaining;
-      }, []);
-    }
-    return hand;
-  });
+  unPlayedCards.forEach(function(card) {
+    this.hands.forEach(function(hand) {
+      if (hand.length < numberOfCardsInEachHand && this.hasSuits[player][getSuit(card)]) {
+        hand.push(card);
+      }
+    }, this);
+  }, this);
 
   return this;
 };

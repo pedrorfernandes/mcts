@@ -19,13 +19,27 @@ function replacer(key, value) {
 
 var treeDump = function(fileName, mcts) {
   var gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
-  var fileContents = 'var rootNode = ' + gameTreeJson;
-  fs.writeFile('./' + fileName, fileContents, function(err) {
+  fs.writeFile('./treeviz/dumps/' + fileName, gameTreeJson, function(err) {
     if(err) {
       return console.log(err);
     }
 
-    console.log("The file was saved!");
+    console.log("The game tree dump was saved into a file!");
+  });
+
+  var stateJson = JSON.stringify({
+    game: mcts.game,
+    rng: mcts.rng.state(),
+    player: mcts.player,
+    iterations: mcts.iterations
+  });
+
+  fs.writeFile('./treeviz/states/' + fileName, stateJson, function(err) {
+    if(err) {
+      return console.log(err);
+    }
+
+    console.log("The state dump was saved into a file!");
   });
 };
 
