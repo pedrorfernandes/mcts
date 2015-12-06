@@ -1,14 +1,15 @@
 'use strict';
 
-var play = require("./play");
+var play = require('./play');
 
 var host = 'localhost:3000';
 var gameType = 'sueca';
 
-var MCTS = require('./mcts/index.js').MCTS;
+var ISMCTS = require('./mcts/ismcts.js').ISMCTS;
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 var Sueca = require('./test/sueca').Sueca;
+var treeDump = require('./treeviz/treedump').treeDump;
 
 var seed = rng();
 console.log(seed);
@@ -43,6 +44,8 @@ var mapPlayer = function(player) {
   return player - 1;
 };
 
+var movesCount = 1;
+
 var gameInterface = {
   'start': function(event, callback) {
     var hands = [[], [], [], []];
@@ -65,11 +68,13 @@ var gameInterface = {
     console.log('game start');
   },
   'requestMove': function(event, callback) {
-    var mcts = new MCTS(sueca, 5000, sueca.currentPlayer, seed);
+    var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
 
     console.time('selectMove');
     var move = mcts.selectMove();
     console.timeEnd('selectMove');
+
+    treeDump(movesCount + '.json', mcts);
 
     callback(null, mapCardInverse(move));
   },
@@ -79,6 +84,7 @@ var gameInterface = {
       console.error('Game is desynchronized!', JSON.stringify(sueca), JSON.stringify(event));
     }
     sueca.performMove(mapCard(event.move));
+    movesCount += 1;
   },
   'state': function(event, callback) {
     // console.log('state ' + JSON.stringify(event));

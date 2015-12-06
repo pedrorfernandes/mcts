@@ -68,8 +68,9 @@ Sueca.prototype.setObserver = function(watcher) {
 
 function copyHands(hand) {
   var newArray = [];
-  for (var i = 0; i < hand.length; i++)
+  for (var i = 0; i < hand.length; i++) {
     newArray[i] = hand[i].slice();
+  }
 
   return newArray
 }
@@ -124,30 +125,33 @@ Sueca.prototype.getPossibilities = function(playerPerspective) {
 };
 
 Sueca.prototype.getPossibleMoves = function (playerPerspective) {
-  if (typeof playerPerspective == 'undefined') throw new Error('missing argument');
-  if (playerPerspective === this.currentPlayer) {
-    var hand = this.hands[this.currentPlayer];
-    if (this.getCardsInTableCount() === 0) {
+  var hand = this.hands[this.currentPlayer];
+
+  if (_.all(this.hands, _.isEmpty)) {
+    return [];
+  }
+
+  if (playerPerspective && playerPerspective !== this.currentPlayer) {
+    return this.getPossibilities(playerPerspective);
+  }
+
+  if (this.getCardsInTableCount() === 0) {
+    return hand;
+  }
+  else {
+    var cardsOfSuit = [];
+    if (this.suitToFollow) {
+      cardsOfSuit = hand.filter(function (card) {
+        return getSuit(card) === this.suitToFollow
+      }, this);
+    }
+
+    if (_.isEmpty(cardsOfSuit)) {
       return hand;
     }
     else {
-      var cardsOfSuit = [];
-      if (this.suitToFollow) {
-        cardsOfSuit = hand.filter(function (card) {
-          return getSuit(card) === this.suitToFollow
-        }, this);
-      }
-
-      if (_.isEmpty(cardsOfSuit)) {
-        return hand;
-      }
-      else {
-        return cardsOfSuit;
-      }
+      return cardsOfSuit;
     }
-  }
-  else {
-    return this.getPossibilities(playerPerspective);
   }
 };
 
@@ -253,6 +257,55 @@ Sueca.prototype.getWinner = function () {
   }
 
   return null;
+};
+
+Sueca.prototype.randomize = function(rng, player) {
+  if (typeof player != 'undefined') {
+    var hand = this.hands[player];
+    this.hands = [[],[],[],[]];
+    this.hands[player] = hand;
+  }
+
+  this.hands.forEach(function returnTrickToHand(hand, playerIndex) {
+    if (this.trick[playerIndex]) {
+      hand.push(this.trick[playerIndex]);
+    }
+  }, this);
+
+  var numberOfCardsInEachHand = _.max(this.hands.map(function(h) {return h.length}));
+
+  var playedCards = _.flatten(this.wonCards)
+    .concat(_.flatten(this.hands));
+
+  if (!_.contains(playedCards, this.trumpCard)) {
+    this.hands[this.trumpPlayer].push(this.trumpCard);
+    playedCards.push(this.trumpCard);
+  }
+
+  var unPlayedCards = _.difference(startingDeck, playedCards);
+
+  unPlayedCards = shuffle(unPlayedCards, rng);
+
+  var hasSuits = this.hasSuits;
+
+  this.hands = this.hands.map(function distributeCards(hand, player) {
+    var numberOfCardsToTake =  numberOfCardsInEachHand - hand.length;
+    if (numberOfCardsToTake > 0) {
+      // take N cards from cards to distribute
+      unPlayedCards = unPlayedCards.reduce(function(remaining, card) {
+        if (hand.length < numberOfCardsInEachHand && hasSuits[player][getSuit(card)]) {
+          hand.push(card);
+        }
+        else {
+          remaining.push(card);
+        }
+        return remaining;
+      }, []);
+    }
+    return hand;
+  });
+
+  return this;
 };
 
 var suitOrder = {

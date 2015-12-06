@@ -1,4 +1,5 @@
-var MCTS = require('./mcts/index.js').MCTS;
+var ISMCTS = require('./mcts/ismcts.js').ISMCTS;
+var stringify = require('json-stringify-safe');
 
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
@@ -20,7 +21,7 @@ sueca.setObserver({
 });
 
 while(!sueca.getWinner()) {
-    var mcts = new MCTS(sueca, 10000, sueca.currentPlayer, seed);
+    var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
     if (round !== sueca.round) {
         round = sueca.round;
         console.log('\nRound ' + round);
