@@ -6,7 +6,7 @@
 </head>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.9/d3.js"></script>
-<script src="cardGameSVG.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.js"></script>
 
 <link rel="stylesheet" type="text/css" href="style.css">
 
@@ -196,7 +196,8 @@
         update(d);
     }
 
-    d3.json('./dumps/' + fileName, function(rootNode) {
+    d3.text('./trees/' + fileName, function(compressed) {
+        var rootNode = JSON.parse(LZString.decompressFromUTF16(compressed));
         loadData(rootNode);
     });
 

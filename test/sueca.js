@@ -266,32 +266,27 @@ Sueca.prototype.randomize = function(rng, player) {
     this.hands[player] = hand;
   }
 
-  this.hands.forEach(function returnTrickToHand(hand, playerIndex) {
-    if (this.trick[playerIndex]) {
-      hand.push(this.trick[playerIndex]);
-    }
+  var numberOfCardsInEachHand = this.hands.map(function(h, playerIndex) {
+    return 11 - this.round - (this.trick[playerIndex] ? 1 : 0);
   }, this);
 
-  var numberOfCardsInEachHand = _.max(this.hands.map(function(h) {return h.length}));
+  var knownCards = _.flatten(this.wonCards)
+    .concat(_.flatten(this.hands))
+    .concat(this.trick);
 
-  var playedCards = _.flatten(this.wonCards)
-    .concat(_.flatten(this.hands));
-
-  if (!_.contains(playedCards, this.trumpCard)) {
-    this.hands[this.trumpPlayer].push(this.trumpCard);
-    playedCards.push(this.trumpCard);
+  if (!_.contains(knownCards, this.trumpCard)) {
+    knownCards.push(this.trumpCard);
   }
 
-  var unPlayedCards = _.difference(startingDeck, playedCards);
+  var unknownCards = _.difference(startingDeck, knownCards);
 
-  unPlayedCards = shuffle(unPlayedCards, rng);
+  unknownCards = shuffle(unknownCards, rng);
 
-  unPlayedCards.forEach(function(card) {
-    this.hands.forEach(function(hand) {
-      if (hand.length < numberOfCardsInEachHand && this.hasSuits[player][getSuit(card)]) {
-        hand.push(card);
-      }
+  unknownCards.forEach(function(card) {
+    var validHand = _.find(this.hands, function(hand, playerIndex) {
+      return hand.length < numberOfCardsInEachHand[playerIndex] && this.hasSuits[playerIndex][getSuit(card)];
     }, this);
+    validHand.push(card);
   }, this);
 
   return this;

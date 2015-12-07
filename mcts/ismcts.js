@@ -56,6 +56,10 @@ Node.prototype.expand = function(deterministicGame) {
   var move = sample(untriedMoves, this.mcts.rng);
   var moveIndex = this.possibleMoves.indexOf(move);
 
+  if(moveIndex === -1) {
+    throw new Error('Get Possible Moves and Randomize game are not coherent')
+  }
+
   var expanded = new Node({
     game: this.game,
     parent: this,
@@ -138,7 +142,10 @@ Node.prototype.getMostVisitedChild = function() {
 };
 
 var nodeValue = function(explorationValue, node) {
-  return getUCB1(explorationValue, node);
+  if (node.parent.game.getCurrentPlayer() === node.mcts.player) {
+    return getUCB1(explorationValue, node);
+  }
+  return - node.visits;
 };
 
 var EXPLORATION_VALUE = Math.sqrt(2);

@@ -6,8 +6,9 @@
   "main": "mcts/index.js",
   "dependencies": {
     "lodash": "^3.5.0",
-    "seedrandom": "^2.4.2",
+    "lz-string": "^1.4.4",
     "request": "^2.64.0",
+    "seedrandom": "^2.4.2",
     "ws": "^0.8.0"
   },
   "devDependencies": {

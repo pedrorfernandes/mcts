@@ -2,6 +2,7 @@
 
 var fs = require('fs');
 var stringify = require('json-stringify-safe');
+var LZString = require('lz-string');
 
 function replacer(key, value) {
   if (key === 'children') {
@@ -19,7 +20,9 @@ function replacer(key, value) {
 
 var treeDump = function(fileName, mcts) {
   var gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
-  fs.writeFile('./treeviz/dumps/' + fileName, gameTreeJson, function(err) {
+  var compressedData = LZString.compressToUTF16(gameTreeJson);
+  var treeFilePath = __dirname + '/trees/' + fileName;
+  fs.writeFile(treeFilePath, compressedData, function(err) {
     if(err) {
       return console.log(err);
     }
@@ -34,7 +37,8 @@ var treeDump = function(fileName, mcts) {
     iterations: mcts.iterations
   });
 
-  fs.writeFile('./treeviz/states/' + fileName, stateJson, function(err) {
+  var stateFilePath = __dirname + '/states/' + fileName;
+  fs.writeFile(stateFilePath, stateJson, function(err) {
     if(err) {
       return console.log(err);
     }
