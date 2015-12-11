@@ -4,11 +4,8 @@
 
 var _ = require('lodash');
 var randomGenerator = require('seedrandom');
-var shuffle = require('./shuffle');
-
-var sample = function(array, rng) {
-  return array[Math.floor(rng() * array.length)];
-};
+var shuffle = require('./shuffle').shuffle;
+var sample = require('./shuffle').sample;
 
 function Node(options) {
   this.game = new options.game.constructor(options.game);

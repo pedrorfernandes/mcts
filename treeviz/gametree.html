@@ -8,7 +8,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.9/d3.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.js"></script>
 
-<link rel="stylesheet" type="text/css" href="style.css">
+<style>
+    .node {
+        cursor: pointer;
+    }
+    .node circle {
+        fill: #fff;
+        stroke: black;
+        stroke-width: 1.5px;
+    }
+    .node text {
+        font: 10px sans-serif;
+    }
+    .link {
+        fill: none;
+        stroke: #ccc;
+        stroke-width: 1.5px;
+    }
+
+</style>
 
 <script>
 
@@ -73,6 +91,16 @@
         '♠': 4, '♥': 3, '♦': 2, '♣': 1
     };
 
+    var blues = {
+        3: ["#deebf7","#9ecae1","#3182bd"],
+        4: ["#eff3ff","#bdd7e7","#6baed6","#2171b5"],
+        5: ["#eff3ff","#bdd7e7","#6baed6","#3182bd","#08519c"],
+        6: ["#eff3ff","#c6dbef","#9ecae1","#6baed6","#3182bd","#08519c"],
+        7: ["#eff3ff","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#084594"],
+        8: ["#f7fbff","#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#084594"],
+        9: ["#f7fbff","#deebf7","#c6dbef","#9ecae1","#6baed6","#4292c6","#2171b5","#08519c","#08306b"]
+    };
+
     function loadData(rootNode) {
 
         root = rootNode;
@@ -108,7 +136,17 @@
 
         // Update the nodes…
         var node = svg.selectAll("g.node")
-                .data(nodes, function(d) { return d.id || (d.id = ++i); });
+                .data(nodes, function(d) {
+                    if (d.parent && !d.parent.colorQuantize) {
+                        var parent = d.parent;
+                        var extent = d3.extent(parent.children, function(child) {
+                            return child.visits;
+                        });
+                        parent.colorQuantize = d3.scale.quantize()
+                                .domain([extent[0], extent[1]]).range(blues[4]);
+                    }
+                    return d.id || (d.id = ++i);
+                });
 
         // Enter any new nodes at the parent's previous position.
         var nodeEnter = node.enter().append("g")
@@ -125,6 +163,14 @@
                 .attr("dy", ".35em")
                 .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
                 .text(function(d) { return d.move + ' ' + d.wins + '/' + d.visits + ': ' + d.avails; })
+                .style("fill", function(d) {
+                    var suit = (d.move && d.move[1]) || '';
+                    if (suit === '♥' || suit === '♦') {
+                        return '#C00000';
+                    }
+                    return 'black';
+                })
+                .style('font-weight', 'bold')
                 .style("fill-opacity", 1e-6);
 
         // Transition nodes to their new position.
@@ -133,8 +179,11 @@
                 .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
 
         nodeUpdate.select("circle")
-                .attr("r", 6)
-                .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
+                .attr("r", 7)
+                .style("fill", function(d) {
+                    return d.parent ? d.parent.colorQuantize(d.visits) : '#fff';
+                    // return d._children ? "lightsteelblue" : "#fff";
+                });
 
         nodeUpdate.select("text")
                 .style("fill-opacity", 1);

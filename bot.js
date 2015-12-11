@@ -9,7 +9,7 @@ var ISMCTS = require('./mcts/ismcts.js').ISMCTS;
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 var Sueca = require('./test/sueca').Sueca;
-var treeDump = require('./treeviz/treedump').treeDump;
+var Dumper = require('./treeviz/dumper');
 
 var seed = rng();
 console.log(seed);
@@ -68,13 +68,15 @@ var gameInterface = {
     console.log('game start');
   },
   'requestMove': function(event, callback) {
+    var stateFileName = movesCount + '.json';
     var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
+    Dumper.saveState(stateFileName, mcts);
 
     console.time('selectMove');
     var move = mcts.selectMove();
     console.timeEnd('selectMove');
 
-    treeDump(movesCount + '.json', mcts);
+    Dumper.saveTree(stateFileName, mcts);
 
     callback(null, mapCardInverse(move));
   },

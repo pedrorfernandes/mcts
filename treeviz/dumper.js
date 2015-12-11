@@ -18,7 +18,7 @@ function replacer(key, value) {
   return value;
 }
 
-var treeDump = function(fileName, mcts) {
+var saveGameTree = function(fileName, mcts) {
   var gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
   var compressedData = LZString.compressToUTF16(gameTreeJson);
   var treeFilePath = __dirname + '/trees/' + fileName;
@@ -29,7 +29,9 @@ var treeDump = function(fileName, mcts) {
 
     console.log("The game tree dump was saved into a file!");
   });
+};
 
+var saveGameState = function(fileName, mcts) {
   var stateJson = JSON.stringify({
     game: mcts.game,
     rng: mcts.rng.state(),
@@ -47,6 +49,13 @@ var treeDump = function(fileName, mcts) {
   });
 };
 
+var saveAll = function(fileName, mcts) {
+  saveGameTree(fileName, mcts);
+  saveGameState(fileName, mcts);
+};
+
 module.exports = {
-  treeDump: treeDump
+  saveTree: saveGameTree,
+  saveState: saveGameState,
+  saveAll: saveAll
 };

@@ -1,6 +1,6 @@
 var randGen = require('seedrandom');
 
-module.exports = function shuffle(array, rng) {
+function shuffle(array, rng) {
   var currentIndex;
   var temporaryValue;
   var randomIndex;
@@ -24,4 +24,13 @@ module.exports = function shuffle(array, rng) {
   }
 
   return array
+}
+
+function sample(array, rng) {
+  return array[Math.floor(rng() * array.length)];
+}
+
+module.exports = {
+  shuffle: shuffle,
+  sample: sample
 };
