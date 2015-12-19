@@ -130,10 +130,6 @@ Sueca.prototype.getPossibilities = function(playerPerspective) {
 Sueca.prototype.getPossibleMoves = function (playerPerspective) {
   var hand = this.hands[this.currentPlayer];
 
-  if (_.all(this.hands, _.isEmpty)) {
-    return [];
-  }
-
   if (playerPerspective && playerPerspective !== this.currentPlayer) {
     return this.getPossibilities(playerPerspective);
   }
@@ -263,6 +259,10 @@ Sueca.prototype.getWinner = function () {
 };
 
 Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIndexes, numberCardsPerPlayer, rng) {
+  if (cards.length === 0) {
+    return [[],[],[],[]];
+  }
+
   var hasSuits = this.hasSuits;
   function getRestrictionPenalty (card, playerIndex)  {
       // 0 -> possible, 1 -> impossible, constraint broken
@@ -345,18 +345,18 @@ Sueca.prototype.randomize = function(rng, player) {
   }, this);
 
   // TODO remove, only purpose is for debugging inconsistencies
-  // var hasSuits = this.hasSuits;
-  // this.hands.forEach(function(hand, playerIndex) {
-  //   if (hand.length !== numberOfCardsInEachHandAtStartOfRound[playerIndex]) {
-  //     throw new Error('Game randomization failed!');
-  //   }
-  //   var invalid = _.some(hand, function(card) {
-  //     return hasSuits[playerIndex][getSuit(card)] === false;
-  //   });
-  //   if (invalid) {
-  //     throw new Error('Game randomization failed due to restrictions!');
-  //   }
-  // }, this);
+  var hasSuits = this.hasSuits;
+  this.hands.forEach(function(hand, playerIndex) {
+    if (hand.length !== numberOfCardsInEachHandAtStartOfRound[playerIndex]) {
+      throw new Error('Game randomization failed!');
+    }
+    var invalid = _.some(hand, function(card) {
+      return hasSuits[playerIndex][getSuit(card)] === false;
+    });
+    if (invalid) {
+      throw new Error('Game randomization failed due to restrictions!');
+    }
+  }, this);
 
   return this;
 };

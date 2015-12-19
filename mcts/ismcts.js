@@ -80,13 +80,15 @@ function select(node, deterministicGame) {
   return node;
 }
 
-ISMCTS.prototype.getReward = function(deterministicGame) {
+Node.prototype.getReward = function(deterministicGame) {
   var winner = deterministicGame.getWinner();
 
-  if (Array.isArray(winner) && _.contains(winner, this.player)) {
+  var playerForThisNode = this.parent ? this.parent.game.currentPlayer : this.game.currentPlayer;
+
+  if (Array.isArray(winner) && _.contains(winner, playerForThisNode)) {
     return 1;
   }
-  else if (this.player === winner) {
+  else if (playerForThisNode === winner) {
     return 1;
   }
   return 0;
@@ -99,14 +101,14 @@ ISMCTS.prototype.simulate = function(deterministicGame) {
     deterministicGame.performMove(move);
     possibleMoves = deterministicGame.getPossibleMoves();
   }
-  return this.getReward(deterministicGame);
+  return deterministicGame;
 };
 
-Node.prototype.backPropagate = function(reward) {
+Node.prototype.backPropagate = function(finishedGame) {
   var node = this;
   while (node != null) {
     node.visits += 1;
-    node.wins += reward;
+    node.wins += node.getReward(finishedGame);
     node = node.parent;
   }
 };
@@ -139,18 +141,15 @@ Node.prototype.getMostVisitedChild = function() {
 };
 
 var nodeValue = function(explorationValue, node) {
-  if (node.parent.game.getCurrentPlayer() === node.mcts.player) {
-    return getUCB1(explorationValue, node);
-  }
-  return - node.visits;
+  return getUCB1(explorationValue, node);
 };
 
-var EXPLORATION_VALUE = Math.sqrt(2);
+var EXPLORATION_VALUE = Math.sqrt(2) / 2;
 var NO_EXPLORATION = 0;
 var getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
     return (node.wins / node.visits)
-      + explorationValue * Math.sqrt(2 * Math.log(node.avails) / node.visits);
+      + explorationValue * Math.sqrt(Math.log(node.avails) / node.visits);
   }
   else {
     return (node.wins / node.visits);
@@ -182,8 +181,8 @@ ISMCTS.prototype.selectMove = function () {
     var deterministicGame = node.determinize();
     node = select(node, deterministicGame);
     node = node.expand(deterministicGame);
-    var reward = this.simulate(deterministicGame);
-    node.backPropagate(reward);
+    var finishedGame = this.simulate(deterministicGame);
+    node.backPropagate(finishedGame);
   }
 
   return this.rootNode.getMostVisitedChild().move;

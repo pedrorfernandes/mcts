@@ -162,7 +162,7 @@
                 .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
                 .attr("dy", ".35em")
                 .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-                .text(function(d) { return d.move + ' ' + d.wins + '/' + d.visits + ': ' + d.avails; })
+                .text(function(d) { return d.move + ' ' + d.wins + '/' + d.visits + ', ' + ((d.wins / d.visits) * 100).toFixed(1) + '% '  + ': ' + d.avails; })
                 .style("fill", function(d) {
                     var suit = (d.move && d.move[1]) || '';
                     if (suit === '♥' || suit === '♦') {

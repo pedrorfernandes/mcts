@@ -40,13 +40,8 @@ var saveGameState = function(fileName, mcts) {
   });
 
   var stateFilePath = __dirname + '/states/' + fileName;
-  fs.writeFile(stateFilePath, stateJson, function(err) {
-    if(err) {
-      return console.log(err);
-    }
-
-    console.log("The state dump was saved into a file!");
-  });
+  fs.writeFileSync(stateFilePath, stateJson);
+  console.log("The state dump was saved into a file!");
 };
 
 var saveAll = function(fileName, mcts) {

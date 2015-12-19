@@ -36,14 +36,14 @@ module.exports = function(host, gameHref, player, gameInterface) {
           return;
         }
 
-        gameInterface[evt.eventType](evt, function(error, result) {
+        gameInterface[evt.eventType](evt, function(error, result, callback) {
           if (error) {
             console.log(error);
             return;
           }
 
           if (result) {
-            ws.send(JSON.stringify(result));
+            ws.send(JSON.stringify(result), callback);
           }
         });
       });

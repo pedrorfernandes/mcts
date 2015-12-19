@@ -76,9 +76,9 @@ var gameInterface = {
     var move = mcts.selectMove();
     console.timeEnd('selectMove');
 
-    Dumper.saveTree(stateFileName, mcts);
-
-    callback(null, mapCardInverse(move));
+    callback(null, mapCardInverse(move), function(error) {
+      Dumper.saveTree(stateFileName, mcts);
+    });
   },
   'move': function(event, callback) {
     var currentPlayer = mapPlayer(event.player);
