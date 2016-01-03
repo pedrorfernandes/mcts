@@ -258,21 +258,27 @@ Sueca.prototype.getWinner = function () {
   return null;
 };
 
-Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIndexes, numberCardsPerPlayer, rng) {
-  if (cards.length === 0) {
-    return [[],[],[],[]];
-  }
+var distributionWeights = {};
+var getDistributionWeightsForGame = function(cards, playerIndexes, numberCardsPerPlayer) {
+  var gameKey = cards.join() + playerIndexes.join() + numberCardsPerPlayer.join();
+  return distributionWeights[gameKey];
+};
 
+Sueca.prototype.distributionWeights = distributionWeights;
+
+var setDistributionWeightsForGame = function(cards, playerIndexes, numberCardsPerPlayer, weights) {
+  var gameKey = cards.join() + playerIndexes.join() + numberCardsPerPlayer.join();
+  return distributionWeights[gameKey] = weights;
+};
+
+Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIndexes, numberCardsPerPlayer) {
   var hasSuits = this.hasSuits;
   function getRestrictionPenalty (card, playerIndex)  {
-      // 0 -> possible, 1 -> impossible, constraint broken
-      return hasSuits[playerIndex][getSuit(card)] ? 0 : Infinity;
+    // 0 -> possible, 1 -> impossible, constraint broken
+    return hasSuits[playerIndex][getSuit(card)] ? 0 : Infinity;
   }
 
   var cardCompatibilityCountForEachPlayer = [];
-
-  cards = shuffle(cards, rng);
-  playerIndexes = shuffle(playerIndexes, rng);
 
   var playerAssignmentIndexes = _.flatten(playerIndexes.map(function(playerIndex) {
     var numberCardsToAssign = numberCardsPerPlayer[playerIndex];
@@ -284,6 +290,19 @@ Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIn
       return getRestrictionPenalty(card, playerIndex)
     });
   }, this);
+
+  var distributionWeights = getDistributionWeightsForGame(cards, playerIndexes, numberCardsPerPlayer);
+  if (!distributionWeights) {
+    distributionWeights = cardCompatibilityCountForEachPlayer;
+  }
+  else {
+    for(var i = 0; i < distributionWeights.length; i++) {
+      var weights = distributionWeights[i];
+      for(var j = 0; j < weights.length; j++) {
+        cardCompatibilityCountForEachPlayer[i][j] += distributionWeights[i][j];
+      }
+    }
+  }
 
   var mapToPlayerIndex = function(resultMatrixCell) {
     return playerAssignmentIndexes[resultMatrixCell[1]];
@@ -298,10 +317,13 @@ Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIn
   var hands = [[],[],[],[]];
 
   result.forEach(function(resultMatrixCell) {
+    distributionWeights[resultMatrixCell[0]][resultMatrixCell[1]] += 1;
     var playerIndex = mapToPlayerIndex(resultMatrixCell);
     var card = mapToCard(resultMatrixCell);
     hands[playerIndex].push(card);
   }, this);
+
+  setDistributionWeightsForGame(cards, playerIndexes, numberCardsPerPlayer, distributionWeights);
 
   return hands;
 };
