@@ -4,8 +4,6 @@ var _ = require('lodash');
 var randomGenerator = require('seedrandom');
 var shuffle = require('../mcts/shuffle').shuffle;
 var sample = require('../mcts/shuffle').sample;
-var Munkres = require('munkres-js').Munkres;
-var munkres = new Munkres();
 
 function Card(rank, suit) {
   return rank + suit;
@@ -130,7 +128,7 @@ Sueca.prototype.getPossibilities = function(playerPerspective) {
 Sueca.prototype.getPossibleMoves = function (playerPerspective) {
   var hand = this.hands[this.currentPlayer];
 
-  if (playerPerspective && playerPerspective !== this.currentPlayer) {
+  if (_.isNumber(playerPerspective) && playerPerspective !== this.currentPlayer) {
     return this.getPossibilities(playerPerspective);
   }
 
@@ -306,6 +304,22 @@ Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIn
   return hands;
 };
 
+Sueca.prototype.isInvalidAssignment = function(hands, roundStartCardNumberArray) {
+  if (!hands) { return true; }
+
+  var hasSuits = this.hasSuits;
+  return _.some(hands, function isInvalid (hand, playerIndex) {
+
+    if (hand.length !== roundStartCardNumberArray[playerIndex]) {
+      return true;
+    }
+
+    return _.some(hand, function hasInvalidSuit (card) {
+      return hasSuits[playerIndex][getSuit(card)] === false;
+    });
+  });
+};
+
 Sueca.prototype.randomize = function(rng, player) {
   if (typeof player != 'undefined') {
     // clear other player hands when game is already deterministic
@@ -314,49 +328,37 @@ Sueca.prototype.randomize = function(rng, player) {
     this.hands[player] = hand;
   }
 
-  var numberOfCardsInEachHandAtStartOfRound = this.hands.map(function(h, playerIndex) {
+  var roundStartCardNumberArray = this.hands.map(function(h, playerIndex) {
     return 11 - this.round - (this.trick[playerIndex] ? 1 : 0);
   }, this);
-
-  var handsSize = this.hands.map(function(h) { return h.length });
-  var maxCardsCount = _.max(handsSize);
-  var currentPlayerIndex = handsSize.indexOf(maxCardsCount);
 
   var knownCards = _.flatten(this.wonCards)
     .concat(_.flatten(this.hands))
     .concat(this.trick.filter(function(c) { return c !== null }));
 
-  if (!_.contains(knownCards, this.trumpCard)) {
+  if (!_.includes(knownCards, this.trumpCard)) {
     knownCards.push(this.trumpCard);
     this.hands[this.trumpPlayer].push(this.trumpCard);
   }
 
   var unknownCards = _.difference(startingDeck, knownCards);
 
-  var playerIndexesToAssignCards = _.pull([0,1,2,3], currentPlayerIndex);
-  var numberCardsPerPlayer = this.hands.map(function(h, playerIndex) {
-    return numberOfCardsInEachHandAtStartOfRound[playerIndex] - this.hands[playerIndex].length;
-  }, this);
+  var possibleHands, shuffledUnknownCards, counter = 0;
 
-  var assigned = this.assignCardsToPlayersWithRestrictions(unknownCards, playerIndexesToAssignCards, numberCardsPerPlayer, rng);
+  while (this.isInvalidAssignment(possibleHands, roundStartCardNumberArray)) {
 
-  assigned.forEach(function(assignedCards, playerIndex) {
-    this.hands[playerIndex] = this.hands[playerIndex].concat(assignedCards);
-  }, this);
+    shuffledUnknownCards = shuffle(unknownCards.slice(), rng);
 
-  // TODO remove, only purpose is for debugging inconsistencies
-  var hasSuits = this.hasSuits;
-  this.hands.forEach(function(hand, playerIndex) {
-    if (hand.length !== numberOfCardsInEachHandAtStartOfRound[playerIndex]) {
-      throw new Error('Game randomization failed!');
-    }
-    var invalid = _.some(hand, function(card) {
-      return hasSuits[playerIndex][getSuit(card)] === false;
+    possibleHands = copyHands(this.hands);
+
+    possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
+      var numberOfCardsToTake = roundStartCardNumberArray[playerIndex] - hand.length;
+      return hand.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
     });
-    if (invalid) {
-      throw new Error('Game randomization failed due to restrictions!');
-    }
-  }, this);
+
+  }
+
+  this.hands = possibleHands;
 
   return this;
 };

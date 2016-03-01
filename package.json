@@ -17,6 +17,5 @@
   },
   "scripts": {
     "test": "find -name '*.js' | xargs jslint && mocha"
-  },
-  "author": "Dan Bravender"
+  }
 }
