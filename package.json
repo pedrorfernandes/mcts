@@ -5,6 +5,7 @@
   "repository": "https://github.com/dbravender/mcts",
   "main": "mcts/index.js",
   "dependencies": {
+    "js-combinatorics": "^0.5.0",
     "lodash": "^3.5.0",
     "lz-string": "^1.4.4",
     "request": "^2.64.0",

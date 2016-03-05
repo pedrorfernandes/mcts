@@ -4,6 +4,7 @@ var _ = require('lodash');
 var randomGenerator = require('seedrandom');
 var shuffle = require('../mcts/shuffle').shuffle;
 var sample = require('../mcts/shuffle').sample;
+var Combinatorics = require('js-combinatorics');
 
 function Card(rank, suit) {
   return rank + suit;
@@ -256,68 +257,50 @@ Sueca.prototype.getWinner = function () {
   return null;
 };
 
-Sueca.prototype.assignCardsToPlayersWithRestrictions = function (cards, playerIndexes, numberCardsPerPlayer, rng) {
-  if (cards.length === 0) {
-    return [[],[],[],[]];
-  }
-
-  var hasSuits = this.hasSuits;
-  function getRestrictionPenalty (card, playerIndex)  {
-      // 0 -> possible, 1 -> impossible, constraint broken
-      return hasSuits[playerIndex][getSuit(card)] ? 0 : Infinity;
-  }
-
-  var cardCompatibilityCountForEachPlayer = [];
-
-  cards = shuffle(cards, rng);
-  playerIndexes = shuffle(playerIndexes, rng);
-
-  var playerAssignmentIndexes = _.flatten(playerIndexes.map(function(playerIndex) {
-    var numberCardsToAssign = numberCardsPerPlayer[playerIndex];
-    return _.fill(new Array(numberCardsToAssign), playerIndex);
-  }));
-
-  cards.forEach(function(card, cardIndex) {
-    cardCompatibilityCountForEachPlayer[cardIndex] = playerAssignmentIndexes.map(function(playerIndex) {
-      return getRestrictionPenalty(card, playerIndex)
-    });
-  }, this);
-
-  var mapToPlayerIndex = function(resultMatrixCell) {
-    return playerAssignmentIndexes[resultMatrixCell[1]];
-  };
-
-  var mapToCard = function(resultMatrixCell) {
-    return cards[resultMatrixCell[0]];
-  };
-
-  var result = munkres.compute(cardCompatibilityCountForEachPlayer);
-
-  var hands = [[],[],[],[]];
-
-  result.forEach(function(resultMatrixCell) {
-    var playerIndex = mapToPlayerIndex(resultMatrixCell);
-    var card = mapToCard(resultMatrixCell);
-    hands[playerIndex].push(card);
-  }, this);
-
-  return hands;
-};
-
-Sueca.prototype.isInvalidAssignment = function(hands, roundStartCardNumberArray) {
+Sueca.prototype.isInvalidAssignment = function(hands) {
   if (!hands) { return true; }
 
   var hasSuits = this.hasSuits;
   return _.some(hands, function isInvalid (hand, playerIndex) {
 
-    if (hand.length !== roundStartCardNumberArray[playerIndex]) {
+    if (hand.length !== this.getRoundStartCardNumber(playerIndex)) {
       return true;
     }
 
     return _.some(hand, function hasInvalidSuit (card) {
       return hasSuits[playerIndex][getSuit(card)] === false;
     });
-  });
+
+  }, this);
+};
+
+Sueca.prototype.getSeenCards = function() {
+  var seenCards = _.flatten(this.wonCards)
+    .concat(_.flatten(this.hands))
+    .concat(this.trick.filter(function(c) { return c !== null }));
+
+  if (!_.includes(seenCards, this.trumpCard)) {
+    seenCards.push(this.trumpCard);
+
+    // side effect
+    this.hands[this.trumpPlayer].push(this.trumpCard);
+  }
+
+  return seenCards;
+};
+
+Sueca.prototype.getUnknownCards = function() {
+  return _.difference(startingDeck, this.getSeenCards());
+};
+
+Sueca.prototype.getRoundStartCardNumber = function(playerIndex) {
+  if (!this.roundStartCardNumberArray) {
+    this.roundStartCardNumberArray = this.hands.map(function (h, playerIndex) {
+      return 11 - this.round - (this.trick[playerIndex] ? 1 : 0);
+    }, this);
+  }
+
+  return this.roundStartCardNumberArray[playerIndex];
 };
 
 Sueca.prototype.randomize = function(rng, player) {
@@ -328,39 +311,72 @@ Sueca.prototype.randomize = function(rng, player) {
     this.hands[player] = hand;
   }
 
-  var roundStartCardNumberArray = this.hands.map(function(h, playerIndex) {
-    return 11 - this.round - (this.trick[playerIndex] ? 1 : 0);
-  }, this);
-
-  var knownCards = _.flatten(this.wonCards)
-    .concat(_.flatten(this.hands))
-    .concat(this.trick.filter(function(c) { return c !== null }));
-
-  if (!_.includes(knownCards, this.trumpCard)) {
-    knownCards.push(this.trumpCard);
-    this.hands[this.trumpPlayer].push(this.trumpCard);
-  }
-
-  var unknownCards = _.difference(startingDeck, knownCards);
+  var unknownCards = this.getUnknownCards();
 
   var possibleHands, shuffledUnknownCards, counter = 0;
 
-  while (this.isInvalidAssignment(possibleHands, roundStartCardNumberArray)) {
+  while (this.isInvalidAssignment(possibleHands)) {
 
     shuffledUnknownCards = shuffle(unknownCards.slice(), rng);
 
     possibleHands = copyHands(this.hands);
 
     possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
-      var numberOfCardsToTake = roundStartCardNumberArray[playerIndex] - hand.length;
+      var numberOfCardsToTake = this.getRoundStartCardNumber(playerIndex) - hand.length;
       return hand.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
-    });
+    }, this);
 
   }
 
   this.hands = possibleHands;
 
   return this;
+};
+
+function flatten (a, b) {
+  return a.concat(b);
+}
+
+Sueca.prototype.getAllPossibleHands = function() {
+  var unknownCards = this.getUnknownCards();
+
+  var self = this;
+  function buildCombinations(playerIndex, possibleCards, accumulator) {
+
+    if ( playerIndex >= 4 ) {
+      return accumulator;
+    }
+
+    var playerHand = self.hands[playerIndex];
+
+    var numberCardsToTake = self.getRoundStartCardNumber(playerIndex) - playerHand.length;
+
+    if (numberCardsToTake === 0) {
+      return buildCombinations(playerIndex + 1, possibleCards, accumulator.concat([playerHand]));
+    }
+
+    return Combinatorics.combination(possibleCards, numberCardsToTake)
+      .map(function (combination) {
+        var nextPossible = _.difference(possibleCards, combination);
+
+        var newHand = playerHand.concat(combination);
+
+        return buildCombinations(playerIndex + 1, nextPossible, accumulator.concat([newHand]));
+      })
+      .reduce(flatten)
+  }
+
+  return _.chunk(buildCombinations(0, unknownCards, []), 4)
+};
+
+Sueca.prototype.getAllPossibleStates = function() {
+  var self = this;
+  return this.getAllPossibleHands()
+    .map(function(possibleHand) {
+      var possibleGame = new Sueca(self);
+      possibleGame.hands = possibleHand;
+      return possibleGame
+    })
 };
 
 var suitOrder = {
