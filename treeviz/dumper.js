@@ -34,7 +34,7 @@ var saveGameTree = function(fileName, mcts) {
 var saveGameState = function(fileName, mcts) {
   var stateJson = JSON.stringify({
     game: mcts.game,
-    rng: mcts.rng.state(),
+    rng: mcts.rng ? mcts.rng.state() : null,
     player: mcts.player,
     iterations: mcts.iterations
   });

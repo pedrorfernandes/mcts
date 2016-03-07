@@ -237,7 +237,10 @@ Sueca.prototype.isGameOver = function() {
 };
 
 Sueca.prototype.getPoints = function(players) {
-  var teamWonCards = this.wonCards[players[0]].concat(this.wonCards[players[1]]);
+  var self = this;
+  var teamWonCards = players.reduce(function getCards(cards, player) {
+    return cards.concat(self.wonCards[player]);
+  }, []);
   return _.sum(teamWonCards, function(card) { return getValue(card) });
 };
 
@@ -254,6 +257,7 @@ Sueca.prototype.getWinner = function () {
     return team2;
   }
 
+  // tie
   return null;
 };
 
@@ -377,6 +381,42 @@ Sueca.prototype.getAllPossibleStates = function() {
       possibleGame.hands = possibleHand;
       return possibleGame
     })
+};
+
+Sueca.prototype.getTeam = function(player) {
+  if (player === 0 || player === 2) {
+    return 0;
+  }
+  return 1;
+};
+
+Sueca.prototype.getGameValue = function() {
+  var team1 = [0, 2];
+  var pointsTeam1 = this.getPoints(team1);
+
+  var team2 = [1, 3];
+  var pointsTeam2 = this.getPoints(team2);
+
+  var pointsDifferenceForCurrentPlayer;
+  if (this.currentPlayer === 0 || this.currentPlayer === 2) {
+    pointsDifferenceForCurrentPlayer = pointsTeam1 - pointsTeam2;
+  }
+  else {
+    pointsDifferenceForCurrentPlayer = pointsTeam2 - pointsTeam1;
+  }
+
+  var pointsInHand = this.getPoints([this.currentPlayer]);
+
+  var winningBonus = 0;
+  var winner = this.getWinner();
+  if (winner && _.contains(winner, this.currentPlayer)) {
+    winningBonus = 1000;
+  }
+  else if (winner) {
+    winningBonus = -1000;
+  }
+  
+  return winningBonus + pointsDifferenceForCurrentPlayer + pointsInHand;
 };
 
 var suitOrder = {
