@@ -1,68 +1,125 @@
 'use strict';
 
 var request = require('request');
-
 var WebSocket = require('ws');
 
-module.exports = function(host, gameHref, player, gameInterface) {
+function playBotWars(host, gameHref, player, gameInterface, gameType) {
   var playerName = 'Player ' + player;
+  var gamesUri = 'http://' + host + '/api/' + gameHref + '/' + gameType;
 
-  var gamesUri = 'http://' + host + '/api/' + gameHref + '/games';
+  if (gameType !== 'games' && gameType !== 'competitions') {
+    throw new Error('Invalid game type');
+  }
 
-  var registerUri = function(gameId) {
-    return 'http://' + host + '/api/' + gameHref + '/games/' + gameId + '/register?player=' + player;
-  };
+  function getRegisterUri(gameId) {
+    return 'http://' + host + '/api/' + gameHref + '/' + gameType + '/' + gameId + '/register?player=' + player;
+  }
 
-  var streamUri = function(gameId, playerToken) {
+  function getStreamUri(gameId, playerToken) {
     return 'ws://' + host + '/api/' + gameHref + '/games/' + gameId + '/stream?playerToken=' + playerToken;
-  };
+  }
 
-  function enterGame(gameId, next) {
-    request.post(registerUri(gameId), function(err, res, body) {
-      if(err) { console.log('Could not register in the game'); return; }
+  function getId(game) {
+    return game.gameId || game.compId;
+  }
+
+  function getCompetitionGamesUri(competition) {
+    return 'http://' + host + '/api/' + gameHref + '/competitions/' + competition.compId + '/games';
+  }
+
+  function onGameOpen(gameId, playerToken) {
+    console.log('[' + playerName + '] Connected to game ' + gameId + ' (with token ' + playerToken + ')');
+  }
+
+  function onError(error) {
+    console.error(error);
+  }
+
+  function onMessageReceived(replySocket, data) {
+    var event = JSON.parse(data);
+
+    gameInterface.handleEvent(event, function sendResult(error, result, callback) {
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      if (result) {
+        replySocket.send(JSON.stringify(result), callback);
+      }
+    });
+  }
+
+  function onGameEnd(nextActionFn) {
+    console.log('[' + playerName + '] Finished');
+    nextActionFn();
+  }
+
+  function enterGame(game, playerToken, nextActionFn) {
+    var gameId = getId(game);
+    var ws = new WebSocket(getStreamUri(gameId, playerToken));
+
+    ws.on('open', onGameOpen.bind(null, gameId, playerToken));
+    ws.on('message', onMessageReceived.bind(null, ws));
+    ws.on('close', onGameEnd.bind(null, nextActionFn));
+    ws.on('error', onError);
+  }
+
+  function registerAndEnterGame(game, nextActionFn) {
+    var gameId = getId(game);
+    request.post(getRegisterUri(gameId), function(err, res, body) {
+      if (err) {
+        console.log('Could not register in the game');
+        return;
+      }
 
       var playerToken = JSON.parse(body).playerToken;
-      var ws = new WebSocket(streamUri(gameId, playerToken));
+      enterGame(game, playerToken, nextActionFn)
+    });
+  }
 
-      ws.on('open', function() {
-        console.log('[' + playerName + '] Connected to game ' + gameId + ' (with token ' + playerToken + ')');
-      });
+  function enterCompetition(competition) {
+    var gameId = getId(competition);
+    request.post(getRegisterUri(gameId), function(err, res, body) {
+      if (err) {
+        console.log('Could not register in the game');
+        return;
+      }
 
-      ws.on('message', function(data) {
-        var evt = JSON.parse(data);
+      var playerToken = JSON.parse(body).playerToken;
 
-        if (!gameInterface[evt.eventType]) {
-          console.log('Unhandled event type:' + evt.eventType + ' ' + data);
-          return;
-        }
-
-        gameInterface[evt.eventType](evt, function(error, result, callback) {
-          if (error) {
-            console.log(error);
+      function searchGames () {
+        request.get(getCompetitionGamesUri(competition), function(err, res, body) {
+          var games = JSON.parse(body);
+          if (games.length === 0) {
+            setTimeout(searchGames, 2000);
             return;
           }
 
-          if (result) {
-            ws.send(JSON.stringify(result), callback);
+          for(var i = 0; i < games.length; i++) {
+            if(games[i].status == 'not_started') {
+              enterGame(games[i], playerToken, searchGames);
+              return;
+            }
           }
         });
-      });
+      }
 
-      ws.on('close', function() {
-        console.log('[' + playerName + '] Finished');
-        next();
-      });
+      searchGames();
     });
   }
 
   function findGame() {
     request.get(gamesUri, function(err, res, body) {
-      if(err) { console.log('Could not retrieve the list of current games'); return; }
+      if (err) {
+        console.log('Could not retrieve the list of current games');
+        return;
+      }
 
       var games = JSON.parse(body);
       for(var i = 0; i < games.length; i++) {
         if(games[i].status == 'not_started') {
-          enterGame(games[i].gameId, findGame);
+          registerAndEnterGame(games[i], findGame);
           return;
         }
       }
@@ -70,5 +127,22 @@ module.exports = function(host, gameHref, player, gameInterface) {
     });
   }
 
-  findGame();
-};
+  function findCompetition() {
+    request.get(gamesUri, function(err, res, body) {
+      if (err) {
+        console.log('Could not retrieve the list of current games');
+        return;
+      }
+
+      var competitions = JSON.parse(body);
+      var competition = competitions[0];
+      enterCompetition(competition, function() {
+
+      });
+    });
+  }
+
+  findCompetition();
+}
+
+module.exports = playBotWars;

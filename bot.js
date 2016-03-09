@@ -44,57 +44,84 @@ var mapPlayer = function(player) {
   return player - 1;
 };
 
+// offset to sync tree dumps with BotWars pagination
 var movesCount = 2;
 
+function startHandler(event, callback) {
+  var hands = [[], [], [], []];
+  var myPlayer = mapPlayer(playerNumber);
+
+  hands[myPlayer] = event.state.hand.map(mapCard);
+
+  sueca = new Sueca({
+    hands: hands,
+    currentPlayer: mapPlayer(event.state.nextPlayer),
+    trumpCard: mapCard(event.state.trump),
+    trumpPlayer: mapPlayer(event.state.trumpPlayer),
+    trump: suitMap[event.state.trump.suit],
+    trick: [null, null, null, null],
+    wonCards: [[], [], [], []],
+    round: 1,
+    suitToFollow: null,
+    hasSuits: new Array(4).fill({ '♠': true, '♥': true, '♦': true, '♣': true })
+  });
+
+  console.log('Game started');
+}
+
+function requestMoveHandler(event, callback) {
+  var stateFileName = movesCount + '.json';
+  var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
+  Dumper.saveState(stateFileName, mcts);
+
+  console.time('selectMove');
+  var move = mcts.selectMove();
+  console.timeEnd('selectMove');
+
+  callback(null, mapCardInverse(move), function(error) {
+    Dumper.saveTree(stateFileName, mcts);
+  });
+}
+
+function stateHandler(event, callback) {
+  // console.log('state ' + JSON.stringify(event));
+
+}
+
+function infoHandler(event, callback) {
+
+}
+
+function moveHandler(event, callback) {
+  var currentPlayer = mapPlayer(event.player);
+  if (sueca.currentPlayer !== currentPlayer) {
+    console.error('Game is desynchronized!', JSON.stringify(sueca), JSON.stringify(event));
+  }
+  sueca.performMove(mapCard(event.move));
+  movesCount += 1;
+}
+
+var handlers = {
+  'start': startHandler,
+  'requestMove': requestMoveHandler,
+  'move': moveHandler,
+  'state': stateHandler,
+  'info': infoHandler
+};
+
 var gameInterface = {
-  'start': function(event, callback) {
-    var hands = [[], [], [], []];
-    var myPlayer = mapPlayer(playerNumber);
+  handleEvent : function(event, callback) {
+    var eventType = event.eventType;
 
-    hands[myPlayer] = event.state.hand.map(mapCard);
+    var handlerFn = handlers[eventType];
 
-    sueca = new Sueca({
-      hands: hands,
-      currentPlayer: mapPlayer(event.state.nextPlayer),
-      trumpCard: mapCard(event.state.trump),
-      trumpPlayer: mapPlayer(event.state.trumpPlayer),
-      trump: suitMap[event.state.trump.suit],
-      trick: [null, null, null, null],
-      wonCards: [[], [], [], []],
-      round: 1,
-      suitToFollow: null,
-      hasSuits: new Array(4).fill({ '♠': true, '♥': true, '♦': true, '♣': true })
-    });
-    console.log('game start');
-  },
-  'requestMove': function(event, callback) {
-    var stateFileName = movesCount + '.json';
-    var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
-    Dumper.saveState(stateFileName, mcts);
-
-    console.time('selectMove');
-    var move = mcts.selectMove();
-    console.timeEnd('selectMove');
-
-    callback(null, mapCardInverse(move), function(error) {
-      Dumper.saveTree(stateFileName, mcts);
-    });
-  },
-  'move': function(event, callback) {
-    var currentPlayer = mapPlayer(event.player);
-    if (sueca.currentPlayer !== currentPlayer) {
-      console.error('Game is desynchronized!', JSON.stringify(sueca), JSON.stringify(event));
+    if (!handlerFn) {
+      console.log('Unhandled event type:' + eventType + ' ' + event);
+      return;
     }
-    sueca.performMove(mapCard(event.move));
-    movesCount += 1;
-  },
-  'state': function(event, callback) {
-    // console.log('state ' + JSON.stringify(event));
 
-  },
-  'info': function(event, callback) {
-
+    handlerFn(event, callback);
   }
 };
 
-play(host, gameType, playerNumber, gameInterface);
+play(host, gameType, playerNumber, gameInterface, 'competitions');
