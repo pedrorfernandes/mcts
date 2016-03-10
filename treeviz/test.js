@@ -1,12 +1,12 @@
-var ISMCTS = require('../mcts/ismcts.js').ISMCTS;
+var ISMCTS = require('../search/ismcts.js').ISMCTS;
 var stringify = require('json-stringify-safe');
 var Dumper = require('./dumper.js');
-var Minimax = require('../mcts/minimax.js').Minimax;
+var Minimax = require('../search/minimax.js').Minimax;
 
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 
-var Sueca = require('../test/sueca').Sueca;
+var Sueca = require('../games/sueca').Sueca;
 
 var seed = 0.8572962868822196;//rng();
 console.log(seed);
@@ -38,7 +38,7 @@ var util = require('util');
 //console.log(util.inspect(a, {showHidden: false, depth: null}));
 
 //var mcts = new ISMCTS(sueca, 10000, savedState.player, seed);
-var mcts = new Minimax(sueca, savedState.player, 13);
+ var mcts = new Minimax(sueca, savedState.player, 13);
 
 console.time('selectMove');
 var move = mcts.selectMove();

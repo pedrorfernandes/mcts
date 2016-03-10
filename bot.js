@@ -5,10 +5,10 @@ var play = require('./play');
 var host = 'localhost:3000';
 var gameType = 'sueca';
 
-var ISMCTS = require('./mcts/ismcts.js').ISMCTS;
+var ISMCTS = require('./search/ismcts.js').ISMCTS;
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
-var Sueca = require('./test/sueca').Sueca;
+var Sueca = require('./games/sueca').Sueca;
 var Dumper = require('./treeviz/dumper');
 
 var seed = rng();
@@ -79,7 +79,7 @@ function requestMoveHandler(event, callback) {
   console.timeEnd('selectMove');
 
   callback(null, mapCardInverse(move), function(error) {
-    Dumper.saveTree(stateFileName, mcts);
+  //  Dumper.saveTree(stateFileName, mcts);
   });
 }
 

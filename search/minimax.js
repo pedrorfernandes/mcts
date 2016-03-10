@@ -3,60 +3,63 @@
 var _ = require('lodash');
 var Node = require('./node').Node;
 
+class MinimaxNode extends Node {
+
+  getChildNodes() {
+    var self = this;
+    if (!this.children) {
+      this.possibleMoves = this.game.getPossibleMoves(this.currentPlayer);
+      this.children = this.possibleMoves.map(function(move) {
+        return new MinimaxNode({
+          game: self.game,
+          parent: self,
+          move: move,
+          depth: self.depth + 1,
+          mcts: self.mcts
+        });
+      });
+    }
+    return this.children;
+  }
+
+  getHeuristicValue() {
+    return this.game.getGameValue();
+  }
+
+  isRandomEvent() {
+    // deck possibilities at start of the game
+    return this.depth === 0;
+  }
+
+  getProbability() {
+    return this.parent.childProbability;
+  }
+
+  isAdversaryMove() {
+    return this.game.getTeam(this.game.currentPlayer) !== this.game.getTeam(this.mcts.player);
+  }
+
+  getRandomEventChildNodes() {
+    var self = this;
+    var nextDepth = self.depth + 1;
+    this.children = this.game.getAllPossibleStates().map(function(state) {
+      return new MinimaxNode({
+        game: state,
+        depth: nextDepth,
+        parent: self,
+        mcts: self.mcts
+      });
+    });
+    this.childProbability = 1.0 / this.children.length;
+    return this.children;
+  }
+}
+
 function Minimax(game, player, depth) {
   this.game = game;
   this.player = typeof player == 'undefined' ? 0 : player;
   this.depth = depth;
 }
-
-Node.prototype.getChildNodes = function() {
-  var self = this;
-  if (!this.children) {
-    this.possibleMoves = this.game.getPossibleMoves(this.currentPlayer);
-    this.children = this.possibleMoves.map(function(move) {
-      return new Node({
-        game: self.game,
-        parent: self,
-        move: move,
-        depth: self.depth + 1,
-        mcts: self.mcts
-      });
-    });
-  }
-  return this.children;
-};
-
-Node.prototype.getHeuristicValue = function() {
-  return this.game.getGameValue();
-};
-
-Node.prototype.isRandomEvent = function() {
-  // deck possibilities at start of the game
-  return this.depth === 0;
-};
-
-Node.prototype.getProbability = function() {
-  return this.parent.childProbability;
-};
-
-Node.prototype.isAdversaryMove = function() {
-  return this.game.getTeam(this.game.currentPlayer) !== this.game.getTeam(this.mcts.player);
-};
-
-Node.prototype.getRandomEventChildNodes = function() {
-  var self = this;
-  var nextDepth = self.depth + 1;
-  this.children = this.game.getAllPossibleStates().map(function(state) {
-    return new Node({
-      game: state,
-      depth: nextDepth,
-      parent: self,
-      mcts: self.mcts
-    });
-  });
-  this.childProbability = 1.0 / this.children.length;
-  return this.children;
-};
 
 Minimax.prototype.minimax = function (node, depth, alpha, beta) {
   var self = this;
@@ -105,7 +108,7 @@ function getMostVotedNode (moveVotes) {
 
 Minimax.prototype.selectMove = function () {
   var self = this;
-  this.rootNode = new Node({
+  this.rootNode = new MinimaxNode({
     game: this.game,
     depth: 0,
     mcts: this

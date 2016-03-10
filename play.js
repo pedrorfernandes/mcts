@@ -136,9 +136,7 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
 
       var competitions = JSON.parse(body);
       var competition = competitions[0];
-      enterCompetition(competition, function() {
-
-      });
+      enterCompetition(competition, function noop() {});
     });
   }
 

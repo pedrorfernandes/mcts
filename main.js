@@ -1,10 +1,10 @@
-var ISMCTS = require('./mcts/ismcts.js').ISMCTS;
+var ISMCTS = require('./search/ismcts.js').ISMCTS;
 var stringify = require('json-stringify-safe');
 
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 
-var Sueca = require('./test/sueca').Sueca;
+var Sueca = require('./games/sueca').Sueca;
 
 var seed = 0.9981069023819238;//rng();
 var sueca = new Sueca(seed);

@@ -8,35 +8,85 @@ var shuffle = require('./shuffle').shuffle;
 var sample = require('./shuffle').sample;
 var Node = require('./node').Node;
 
-Node.prototype.expand = function(deterministicGame) {
-  var children = this.getChildNodes();
-  var untriedMoves = this.getUntriedMoves(deterministicGame);
+class ISMCTSNode extends Node {
+  expand(deterministicGame) {
+    var children = this.getChildNodes();
+    var untriedMoves = this.getUntriedMoves(deterministicGame);
 
-  if (untriedMoves.length === 0) {
-    return this;
+    if (untriedMoves.length === 0) {
+      return this;
+    }
+
+    var move = sample(untriedMoves, this.mcts.rng);
+    var moveIndex = this.possibleMoves.indexOf(move);
+
+    if(moveIndex === -1) {
+      throw new Error('Get Possible Moves and Randomize game are not coherent')
+    }
+
+    var expanded = new ISMCTSNode({
+      game: this.game,
+      parent: this,
+      move: move,
+      depth: this.depth + 1,
+      mcts: this.mcts
+    });
+
+    children[moveIndex] = expanded;
+
+    deterministicGame.performMove(move);
+
+    return expanded;
   }
 
-  var move = sample(untriedMoves, this.mcts.rng);
-  var moveIndex = this.possibleMoves.indexOf(move);
+  getReward(deterministicGame) {
+    var winner = deterministicGame.getWinner();
 
-  if(moveIndex === -1) {
-    throw new Error('Get Possible Moves and Randomize game are not coherent')
+    var playerForThisNode = this.parent ? this.parent.game.currentPlayer : this.game.currentPlayer;
+
+    if (Array.isArray(winner) && _.contains(winner, playerForThisNode)) {
+      return 1;
+    }
+    else if (playerForThisNode === winner) {
+      return 1;
+    }
+    return 0;
   }
 
-  var expanded = new Node({
-    game: this.game,
-    parent: this,
-    move: move,
-    depth: this.depth + 1,
-    mcts: this.mcts
-  });
+  backPropagate(finishedGame) {
+    var node = this;
+    while (node != null) {
+      node.visits += 1;
+      node.wins += node.getReward(finishedGame);
+      node = node.parent;
+    }
+  }
 
-  children[moveIndex] = expanded;
+  bestChild(explorationValue, deterministicGame) {
+    var legalMoves = deterministicGame.getPossibleMoves();
+    var legalChildren = this.getChildNodes().filter(function(node) {
+      return node && legalMoves.indexOf(node.move) > -1;
+    });
 
-  deterministicGame.performMove(move);
+    // easier to update availability here instead of backprop
+    legalChildren.forEach(function(node) {
+      node.avails += 1;
+    });
 
-  return expanded;
-};
+    var shuffled = shuffle(legalChildren, this.mcts.rng);
+    return _.max(shuffled, nodeValue.bind(null, explorationValue));
+  }
+
+  getMostVisitedChild() {
+    return _.max(this.children, 'visits');
+  }
+
+  determinize() {
+    var clone = new ISMCTSNode(this);
+    clone.game = clone.game.randomize(this.mcts.rng, this.mcts.player);
+    return clone.game;
+  }
+}
 
 function select(node, deterministicGame) {
   while(!node.isTerminal() && _.isEmpty(node.getUntriedMoves(deterministicGame)) ) {
@@ -46,20 +96,6 @@ function select(node, deterministicGame) {
   return node;
 }
 
-Node.prototype.getReward = function(deterministicGame) {
-  var winner = deterministicGame.getWinner();
-
-  var playerForThisNode = this.parent ? this.parent.game.currentPlayer : this.game.currentPlayer;
-
-  if (Array.isArray(winner) && _.contains(winner, playerForThisNode)) {
-    return 1;
-  }
-  else if (playerForThisNode === winner) {
-    return 1;
-  }
-  return 0;
-};
-
 ISMCTS.prototype.simulate = function(deterministicGame) {
   var possibleMoves = deterministicGame.getPossibleMoves();
   while(!_.isEmpty(possibleMoves)) {
@@ -68,34 +104,6 @@ ISMCTS.prototype.simulate = function(deterministicGame) {
     possibleMoves = deterministicGame.getPossibleMoves();
   }
   return deterministicGame;
-};
-
-Node.prototype.backPropagate = function(finishedGame) {
-  var node = this;
-  while (node != null) {
-    node.visits += 1;
-    node.wins += node.getReward(finishedGame);
-    node = node.parent;
-  }
-};
-
-Node.prototype.bestChild = function(explorationValue, deterministicGame) {
-  var legalMoves = deterministicGame.getPossibleMoves();
-  var legalChildren = this.getChildNodes().filter(function(node) {
-    return node && legalMoves.indexOf(node.move) > -1;
-  });
-
-  // easier to update availability here instead of backprop
-  legalChildren.forEach(function(node) {
-    node.avails += 1;
-  });
-
-  var shuffled = shuffle(legalChildren, this.mcts.rng);
-  return _.max(shuffled, nodeValue.bind(null, explorationValue));
-};
-
-Node.prototype.getMostVisitedChild = function() {
-  return _.max(this.children, 'visits');
 };
 
 var nodeValue = function(explorationValue, node) {
@@ -114,12 +122,6 @@ var getUCB1 = function (explorationValue, node) {
   }
 };
 
-Node.prototype.determinize = function() {
-  var clone = new Node(this);
-  clone.game = clone.game.randomize(this.mcts.rng, this.mcts.player);
-  return clone.game;
-};
-
 function ISMCTS(game, iterations, player, seed) {
   this.game = game;
   this.iterations = iterations || 1000;
@@ -128,7 +130,7 @@ function ISMCTS(game, iterations, player, seed) {
 }
 
 ISMCTS.prototype.selectMove = function () {
-  this.rootNode = new Node({
+  this.rootNode = new ISMCTSNode({
     game: this.game,
     depth: 0,
     mcts: this
