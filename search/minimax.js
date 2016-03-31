@@ -26,15 +26,6 @@ class MinimaxNode extends Node {
     return this.game.getGameValue();
   }
 
-  isRandomEvent() {
-    // deck possibilities at start of the game
-    return this.depth === 0;
-  }
-
-  getProbability() {
-    return this.parent.childProbability;
-  }
-
   isAdversaryMove() {
     return this.game.getTeam(this.game.currentPlayer) !== this.game.getTeam(this.mcts.player);
   }
@@ -46,11 +37,10 @@ class MinimaxNode extends Node {
       return new MinimaxNode({
         game: state,
         depth: nextDepth,
-        parent: self,
+        // parent: self,
         mcts: self.mcts
       });
     });
-    this.childProbability = 1.0 / this.children.length;
     return this.children;
   }
 }
@@ -61,9 +51,7 @@ function Minimax(game, player, depth) {
   this.depth = depth;
 }
 
-Minimax.prototype.minimax = function (node, depth, alpha, beta) {
-  var self = this;
-
+function minimax(node, depth, alpha, beta) {
   if (node.isTerminal() || depth === 0) {
     node.value = node.getHeuristicValue();
     return node.value;
@@ -75,7 +63,7 @@ Minimax.prototype.minimax = function (node, depth, alpha, beta) {
   if (node.isAdversaryMove()) {
     node.value = +Infinity;
     for(childIndex = 0; childIndex < children.length; childIndex++) {
-      node.value = Math.min(node.value, self.minimax(children[childIndex], depth - 1, alpha, beta));
+      node.value = Math.min(node.value, minimax(children[childIndex], depth - 1, alpha, beta));
       beta = Math.min(beta, node.value);
       if (beta <= alpha) {
         break;
@@ -86,7 +74,7 @@ Minimax.prototype.minimax = function (node, depth, alpha, beta) {
   else {
     node.value = -Infinity;
     for(childIndex = 0; childIndex < children.length; childIndex++) {
-      node.value = Math.max(node.value, self.minimax(children[childIndex], depth - 1, alpha, beta));
+      node.value = Math.max(node.value, minimax(children[childIndex], depth - 1, alpha, beta));
       alpha = Math.max(alpha, node.value);
       if (beta <= alpha) {
         break;
@@ -95,7 +83,7 @@ Minimax.prototype.minimax = function (node, depth, alpha, beta) {
   }
   
   return node.value;
-};
+}
 
 function getMostVotedNode (moveVotes) {
   return _.reduce(moveVotes, function(result, value, move) {
@@ -116,10 +104,9 @@ Minimax.prototype.selectMove = function () {
 
   var moveVotes = {};
   var children = this.rootNode.getRandomEventChildNodes();
-
   for(var childIndex = 0; childIndex < children.length; childIndex++) {
     var child = children[childIndex];
-    var bestValue = self.minimax(child, self.depth - 1, -Infinity, +Infinity);
+    var bestValue = minimax(child, self.depth - 1, -Infinity, +Infinity);
 
     child.children.forEach(function(c) {
       if (c.value === bestValue) {

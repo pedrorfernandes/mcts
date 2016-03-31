@@ -6,11 +6,14 @@ var host = 'localhost:3000';
 var gameType = 'sueca';
 
 var ISMCTS = require('./search/ismcts.js').ISMCTS;
+var Minimax = require('./search/minimax.js').Minimax;
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 var Sueca = require('./games/sueca').Sueca;
+var MiniSueca = require('./games/mini-sueca').MiniSueca;
 var Dumper = require('./treeviz/dumper');
 
+var _ = require('lodash');
 var seed = rng();
 console.log(seed);
 
@@ -69,9 +72,17 @@ function startHandler(event, callback) {
   console.log('Game started');
 }
 
+function getSearchAlgorithm() {
+  //if (playerNumber === 1 && playerNumber === 3) {
+    return _.partialRight(ISMCTS, 10000, sueca.currentPlayer, seed);
+  //}
+  //return _.partialRight(Minimax, sueca.currentPlayer, 13);
+}
+
 function requestMoveHandler(event, callback) {
   var stateFileName = movesCount + '.json';
-  var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
+  var searchAlgorithm = getSearchAlgorithm();
+  var mcts = new searchAlgorithm(sueca);
   Dumper.saveState(stateFileName, mcts);
 
   console.time('selectMove');

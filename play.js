@@ -140,7 +140,8 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
     });
   }
 
-  findCompetition();
+  var findFn = gameType === 'games' ? findGame : findCompetition;
+  findFn();
 }
 
 module.exports = playBotWars;

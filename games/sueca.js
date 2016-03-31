@@ -137,21 +137,20 @@ class Sueca {
     if (this._getCardsInTableCount() === 0) {
       return hand;
     }
-    else {
-      var cardsOfSuit = [];
-      if (this.suitToFollow) {
-        cardsOfSuit = hand.filter(function (card) {
-          return getSuit(card) === this.suitToFollow
-        }, this);
-      }
 
-      if (_.isEmpty(cardsOfSuit)) {
-        return hand;
-      }
-      else {
-        return cardsOfSuit;
-      }
+    var cardsOfSuit = [];
+
+    if (this.suitToFollow) {
+      cardsOfSuit = hand.filter(function (card) {
+        return getSuit(card) === this.suitToFollow
+      }, this);
     }
+
+    if (_.isEmpty(cardsOfSuit)) {
+      return hand;
+    }
+
+    return cardsOfSuit;
   }
 
   getHighestCard(table, suitToFollow) {
