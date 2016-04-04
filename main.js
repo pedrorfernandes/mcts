@@ -20,7 +20,7 @@ sueca.setObserver({
     }
 });
 
-while(!sueca.getWinner()) {
+while(!sueca.getWinners()) {
     var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
     if (round !== sueca.round) {
         round = sueca.round;
@@ -35,6 +35,6 @@ while(!sueca.getWinner()) {
     sueca.performMove(move);
 }
 
-var winners = sueca.getWinner();
+var winners = sueca.getWinners();
 
 console.log('\n' + winners + ' have won the match with ' + sueca.getPoints(winners));

@@ -18,6 +18,7 @@ class Node {
     this.mcts = options.mcts;
     this.parent = options.parent || null;
     this.move = typeof options.move != 'undefined' ? options.move : null;
+    this.player = options.player;
     this.wins = 0;
     this.visits = 0;
     this.children = null;

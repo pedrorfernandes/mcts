@@ -1,26 +1,22 @@
 'use strict';
 
 var play = require('./play');
-
-var host = 'localhost:3000';
-var gameType = 'sueca';
-
 var ISMCTS = require('./search/ismcts.js').ISMCTS;
 var Minimax = require('./search/minimax.js').Minimax;
 var seedrandom = require('seedrandom');
 var rng = seedrandom();
 var Sueca = require('./games/sueca').Sueca;
 var MiniSueca = require('./games/mini-sueca').MiniSueca;
+var Bisca = require('./games/bisca').Bisca;
 var Dumper = require('./treeviz/dumper');
-
 var _ = require('lodash');
+
+var host = 'localhost:3000';
+var Game = Bisca;
+var gameType = Game.name.toLowerCase();
+var game;
 var seed = rng();
-console.log(seed);
-
-var sueca;
-
 var playerNumber = process.argv[2];
-
 var suitMap = {
   spades: '♠',
   hearts: '♥',
@@ -32,31 +28,42 @@ var suitMap = {
   '♣': 'clubs'
 };
 
-var mapCard = function(card) {
+console.log(seed);
+
+// offset to sync tree dumps with BotWars pagination
+var movesCount = 2;
+
+let mapSame = card => card;
+
+let mapCardSueca = function(card) {
   return card.value + suitMap[card.suit];
 };
 
-var mapCardInverse = function(card) {
+let mapCard = gameType === 'sueca' ? mapCardSueca : mapSame;
+
+let mapCardInverseSueca = function(card) {
   return {
     value: card[0],
     suit: suitMap[card[1]]
   }
 };
 
-var mapPlayer = function(player) {
+let mapCardInverse = gameType === 'sueca' ? mapCardInverseSueca : mapSame;
+
+let mapPlayerSueca = function(player) {
   return player - 1;
 };
 
-// offset to sync tree dumps with BotWars pagination
-var movesCount = 2;
+let mapPlayer = gameType === 'sueca' ? mapPlayerSueca : mapSame;
 
-function startHandler(event, callback) {
+function toSuecaGame(event) {
+
   var hands = [[], [], [], []];
   var myPlayer = mapPlayer(playerNumber);
 
   hands[myPlayer] = event.state.hand.map(mapCard);
 
-  sueca = new Sueca({
+  return new Game({
     hands: hands,
     currentPlayer: mapPlayer(event.state.nextPlayer),
     trumpCard: mapCard(event.state.trump),
@@ -68,21 +75,36 @@ function startHandler(event, callback) {
     suitToFollow: null,
     hasSuits: new Array(4).fill({ '♠': true, '♥': true, '♦': true, '♣': true })
   });
+}
 
+function toBiscaGame(event) {
+  event.state.currentPlayer = event.state.nextPlayer;
+  return new Game(event.state);
+}
+
+let toGame = {
+  'sueca': toSuecaGame,
+  'bisca': toBiscaGame
+};
+
+function startHandler(event, callback) {
+  game = toGame[gameType](event);
   console.log('Game started');
 }
 
 function getSearchAlgorithm() {
   //if (playerNumber === 1 && playerNumber === 3) {
-    return _.partialRight(ISMCTS, 10000, sueca.currentPlayer, seed);
+    return _.partialRight(ISMCTS, 10000, game.currentPlayer, seed);
   //}
-  //return _.partialRight(Minimax, sueca.currentPlayer, 13);
+  //return _.partialRight(Minimax, game.currentPlayer, 13);
 }
 
 function requestMoveHandler(event, callback) {
+  game = toGame[gameType](event);
+
   var stateFileName = movesCount + '.json';
   var searchAlgorithm = getSearchAlgorithm();
-  var mcts = new searchAlgorithm(sueca);
+  var mcts = new searchAlgorithm(game);
   Dumper.saveState(stateFileName, mcts);
 
   console.time('selectMove');
@@ -90,7 +112,7 @@ function requestMoveHandler(event, callback) {
   console.timeEnd('selectMove');
 
   callback(null, mapCardInverse(move), function(error) {
-  //  Dumper.saveTree(stateFileName, mcts);
+    Dumper.saveTree(stateFileName, mcts);
   });
 }
 
@@ -105,10 +127,10 @@ function infoHandler(event, callback) {
 
 function moveHandler(event, callback) {
   var currentPlayer = mapPlayer(event.player);
-  if (sueca.currentPlayer !== currentPlayer) {
-    console.error('Game is desynchronized!', JSON.stringify(sueca), JSON.stringify(event));
+  if (game.currentPlayer !== currentPlayer) {
+    console.error('Game is desynchronized!', JSON.stringify(game), JSON.stringify(event));
   }
-  sueca.performMove(mapCard(event.move));
+  game.performMove(mapCard(event.move));
   movesCount += 1;
 }
 
@@ -135,4 +157,4 @@ var gameInterface = {
   }
 };
 
-play(host, gameType, playerNumber, gameInterface, 'competitions');
+play(host, gameType, playerNumber, gameInterface, 'games');

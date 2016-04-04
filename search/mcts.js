@@ -75,7 +75,7 @@ function treePolicy(node) {
 }
 
 Node.prototype.getReward = function() {
-  var winner = this.game.getWinner();
+  var winner = this.game.getWinners();
 
   if (Array.isArray(winner) && _.contains(winner, this.mcts.player)) {
     return 1;

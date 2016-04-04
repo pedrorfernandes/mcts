@@ -1,5 +1,3 @@
-/*jslint nomen: true */
-/*jslint indent: 2 */
 'use strict';
 
 var _ = require('lodash');
@@ -26,6 +24,7 @@ class ISMCTSNode extends Node {
 
     var expanded = new ISMCTSNode({
       game: this.game,
+      player: deterministicGame.currentPlayer,
       parent: this,
       move: move,
       depth: this.depth + 1,
@@ -39,15 +38,13 @@ class ISMCTSNode extends Node {
     return expanded;
   }
 
-  getReward(deterministicGame) {
-    var winner = deterministicGame.getWinner();
+  getReward(deterministicGame, player) {
+    var winner = deterministicGame.getWinners();
 
-    var playerForThisNode = this.parent ? this.parent.game.currentPlayer : this.game.currentPlayer;
-
-    if (Array.isArray(winner) && _.contains(winner, playerForThisNode)) {
+    if (Array.isArray(winner) && _.contains(winner, player)) {
       return 1;
     }
-    else if (playerForThisNode === winner) {
+    else if (player === winner) {
       return 1;
     }
     return 0;
@@ -57,7 +54,7 @@ class ISMCTSNode extends Node {
     var node = this;
     while (node != null) {
       node.visits += 1;
-      node.wins += node.getReward(finishedGame);
+      node.wins += node.getReward(finishedGame, node.player);
       node = node.parent;
     }
   }
@@ -132,6 +129,7 @@ function ISMCTS(game, iterations, player, seed) {
 ISMCTS.prototype.selectMove = function () {
   this.rootNode = new ISMCTSNode({
     game: this.game,
+    player: this.game.currentPlayer,
     depth: 0,
     mcts: this
   });

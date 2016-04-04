@@ -100,12 +100,7 @@ class Sueca {
   };
 
   _getCardsInTableCount() {
-    return this.trick.reduce(function(count, card) {
-      if (card !== null) {
-        return count + 1;
-      }
-      return count;
-    }, 0);
+    return this.trick.reduce((count, card) => card !== null ? count + 1 : count, 0);
   }
 
   getAllPossibilities(playerPerspective) {
@@ -141,9 +136,7 @@ class Sueca {
     var cardsOfSuit = [];
 
     if (this.suitToFollow) {
-      cardsOfSuit = hand.filter(function (card) {
-        return getSuit(card) === this.suitToFollow
-      }, this);
+      cardsOfSuit = hand.filter(card => getSuit(card) === this.suitToFollow);
     }
 
     if (_.isEmpty(cardsOfSuit)) {
@@ -228,7 +221,7 @@ class Sueca {
     return _.sum(teamWonCards, function(card) { return getValue(card) });
   }
 
-  getWinner() {
+  getWinners() {
     var team1 = [0, 2];
     var pointsTeam1 = this.getPoints(team1);
     if (pointsTeam1 >= 61) {
@@ -388,7 +381,7 @@ class Sueca {
     var pointsInHand = this.getPoints([this.currentPlayer]);
 
     var winningBonus = 0;
-    var winner = this.getWinner();
+    var winner = this.getWinners();
     if (winner && _.contains(winner, this.currentPlayer)) {
       winningBonus = 1000;
     }
