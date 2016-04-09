@@ -35,8 +35,10 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
     console.error(error);
   }
 
-  function onMessageReceived(replySocket, data) {
+  function onMessageReceived(replySocket, gameId, data) {
     var event = JSON.parse(data);
+    
+    event.gameId = gameId;
 
     gameInterface.handleEvent(event, function sendResult(error, result, callback) {
       if (error) {
@@ -60,7 +62,7 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
     var ws = new WebSocket(getStreamUri(gameId, playerToken));
 
     ws.on('open', onGameOpen.bind(null, gameId, playerToken));
-    ws.on('message', onMessageReceived.bind(null, ws));
+    ws.on('message', onMessageReceived.bind(null, ws, gameId));
     ws.on('close', onGameEnd.bind(null, nextActionFn));
     ws.on('error', onError);
   }

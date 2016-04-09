@@ -7,8 +7,12 @@ var seedrandom = require('seedrandom');
 var rng = seedrandom();
 
 var Sueca = require('../games/sueca').Sueca;
+var MiniSueca = require('../games/mini-sueca').MiniSueca;
+var Bisca = require('../games/bisca').Bisca;
 
-var seed = 0.8572962868822196;//rng();
+var Game = Bisca;
+
+var seed = 0.17233211455043446 //rng();
 console.log(seed);
 
 // var savedState = {"game":{"currentPlayer":3,"hands":[[],[],[],["A♠","Q♣","5♥","2♣","Q♠","4♦","K♦","7♠","7♥"]],"trump":"♦","trick":["6♥","A♥","3♥",null],"trumpCard":"3♦","trumpPlayer":1,"wonCards":[["2♦","4♣","J♣","A♣"],[],[],[]],"round":2,"suitToFollow":"♥","hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":false},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"rng":{"i":0,"j":108,"S":[134,4,140,191,100,118,9,59,153,251,196,157,215,47,68,91,235,15,111,13,32,107,20,213,241,115,81,123,201,137,204,23,53,37,75,181,207,131,26,39,30,65,203,189,234,28,182,237,214,178,146,164,55,247,2,255,109,88,230,124,43,94,7,116,228,0,192,119,5,102,125,101,145,113,70,139,162,71,114,209,129,141,184,195,54,12,117,151,31,11,248,193,150,172,226,77,14,186,154,50,211,242,216,231,67,74,41,175,133,69,6,78,21,168,199,61,93,187,18,45,246,169,249,232,250,103,225,105,22,35,73,92,90,142,95,128,148,58,220,190,233,40,160,27,171,223,80,132,218,224,44,188,83,10,254,138,238,136,185,56,208,108,62,97,1,122,197,3,84,217,205,144,159,194,130,176,19,222,180,212,104,121,147,155,158,240,24,120,46,202,89,52,198,8,126,85,34,112,243,72,167,227,174,106,76,51,38,79,36,156,244,143,221,96,161,60,17,152,206,245,48,42,135,49,163,200,239,82,16,179,33,229,29,170,210,149,98,99,87,110,57,64,253,127,63,236,219,173,165,177,25,86,166,66,252,183]},"player":3,"iterations":10000};
@@ -27,23 +31,35 @@ console.log(seed);
 
 
 // 3 card game
-var savedState = {"game":{"currentPlayer":3,"hands":[[],[],[],["K♦","Q♥","2♠"]],"trump":null,"trick":[null,null,null,null],"trumpCard":"A♣","trumpPlayer":2,"wonCards":[["A♠","7♠","J♠","6♠","5♠","4♠","3♠"],["A♥","7♥","J♥","6♥","5♥","4♥","3♥"],["A♦","7♦","J♦","6♦","5♦","4♦","3♦"],["A♣","7♣","J♣","6♣","5♣","4♣","3♣"]],"round":8,"suitToFollow":null,"hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"player":3};
+// var savedState = {"game":{"currentPlayer":3,"hands":[[],[],[],["K♦","Q♥","2♠"]],"trump":null,"trick":[null,null,null,null],"trumpCard":"A♣","trumpPlayer":2,"wonCards":[["A♠","7♠","J♠","6♠","5♠","4♠","3♠"],["A♥","7♥","J♥","6♥","5♥","4♥","3♥"],["A♦","7♦","J♦","6♦","5♦","4♦","3♦"],["A♣","7♣","J♣","6♣","5♣","4♣","3♣"]],"round":8,"suitToFollow":null,"hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"player":3};
 
 // 2 card game
 // var savedState = {"game":{"currentPlayer":3,"hands":[[],[],[],["K♦","2♠"]],"trump":null,"trick":[null,null,null,null],"trumpCard":"A♣","trumpPlayer":2,"wonCards":[["A♠","7♠","Q♠","J♠","6♠","5♠","4♠","3♠"],["A♥","7♥","Q♥","J♥","6♥","5♥","4♥","3♥"],["A♦","7♦","Q♦","J♦","6♦","5♦","4♦","3♦"],["A♣","7♣","Q♣","J♣","6♣","5♣","4♣","3♣"]],"round":9,"suitToFollow":null,"hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"player":3};
 
-var sueca = new Sueca(savedState.game);
+// var savedState = {"game":{"currentPlayer":0,"hands":[["2♠","2♦","Q♥"],[],[],[]],"trump":"♠","trick":[null,null,null,null],"trumpCard":"K♠","trumpPlayer":3,"wonCards":[[],[],[],[]],"round":1,"suitToFollow":null,"hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"rng":null,"player":0};
+
+// bisca, should play the easy A♥
+// var savedState = {"game":{"numberOfPlayers":2,"currentPlayer":1,"deck":[null,"A♣"],"hands":[["A♥","J♣","4♣","6♠","2♦","Q♠","5♥","2♣","4♠"],[null,null,null,null,null,null,null,null]],"trick":[null,"K♥"],"trumpCard":"A♣","trump":"♣","wonCards":[["5♠","2♠","A♠","J♠","7♣","Q♥","2♥","Q♦","4♥","J♦"],["6♥","7♥","3♦","4♦","3♠","5♦","3♥","6♦","K♠","7♠"]],"round":11,"suitToFollow":"♥","hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}]},"rng":{"i":0,"j":120,"S":[166,95,4,92,192,218,206,65,107,10,26,178,212,49,24,30,31,83,59,119,167,153,227,128,93,160,170,181,142,243,193,136,174,228,121,56,158,69,41,117,77,103,123,5,118,239,157,134,223,100,179,112,57,152,50,252,210,229,143,131,61,11,221,122,80,144,132,71,73,189,207,22,66,253,194,114,164,135,195,35,138,45,13,86,68,42,211,0,21,238,249,156,85,197,127,1,89,111,94,18,115,159,34,188,25,33,27,208,219,169,186,205,200,133,101,196,125,78,154,183,191,215,222,146,14,247,251,102,234,161,40,7,39,173,54,16,203,74,245,48,15,163,53,255,2,109,84,47,155,60,148,130,63,240,98,76,236,108,38,99,19,20,225,75,52,46,199,90,140,217,88,113,72,190,204,176,106,232,233,67,139,168,55,8,87,147,70,91,184,105,244,17,137,81,23,224,43,150,216,110,64,36,177,171,248,202,129,172,180,231,29,214,165,198,182,241,213,226,104,32,235,162,9,124,44,145,58,6,237,209,62,120,3,97,149,254,126,201,96,187,51,242,116,175,246,12,151,79,82,220,250,28,37,141,230,185]},"player":1,"iterations":10000};
+  
+var savedState = {"game":{"numberOfPlayers":2,"currentPlayer":2,"deck":[],"hands":[[null,null,"K♣"],["2♥","4♥","2♣","6♦"]],"trick":["3♠",null],"trumpCard":"K♣","trump":"♣","wonCards":[["Q♣","Q♥","J♠","2♠","5♣","5♥","3♣","4♦","6♣","6♠","A♣","3♦","7♣","5♦","4♣","4♠","J♦","Q♦","K♥","6♥","7♠","5♠","A♦","K♦","Q♠","A♥"],["2♦","7♦","A♠","J♣","3♥","7♥"]],"round":17,"suitToFollow":"♠","hasSuits":[{"♠":false,"♥":true,"♦":true,"♣":true},{"♠":false,"♥":true,"♦":true,"♣":true}]},"rng":{"i":0,"j":62,"S":[24,198,67,243,62,77,214,244,204,237,104,26,213,124,15,129,31,241,63,23,182,19,255,112,117,68,206,159,66,83,122,252,200,195,61,58,86,183,234,253,203,41,216,5,132,227,46,11,134,45,192,76,242,240,125,140,0,189,145,17,87,108,146,70,32,161,75,69,162,225,235,82,155,131,174,191,212,248,230,165,9,229,35,236,144,3,254,116,188,128,172,194,27,171,14,228,137,54,12,2,28,107,130,197,43,30,101,55,186,42,20,164,73,136,25,97,7,89,4,121,8,105,103,93,133,72,187,150,65,153,178,219,211,151,78,71,160,220,18,166,114,168,249,51,221,218,126,53,37,176,251,226,85,100,215,180,148,217,245,91,205,102,163,135,115,36,47,57,111,49,90,106,44,181,246,149,110,199,173,74,208,247,156,60,201,232,196,50,123,33,231,127,34,143,109,38,233,92,84,157,184,154,175,79,88,167,6,224,119,94,120,48,158,222,190,59,118,98,169,152,10,80,52,250,177,64,142,141,170,40,147,138,1,96,95,185,179,16,81,223,209,113,99,207,21,202,139,39,22,56,193,239,210,13,238,29]},"player":2,"iterations":10000};
+
+var game = new Game(savedState.game);
 
 var util = require('util');
 //console.log(util.inspect(a, {showHidden: false, depth: null}));
 
-//var mcts = new ISMCTS(sueca, 10000, savedState.player, seed);
- var mcts = new Minimax(sueca, savedState.player, 13);
+var mcts = new ISMCTS(game, 10000, savedState.player, seed);
+//var minimax = new Minimax(game, savedState.player, 13);
+
+//var minimaxMove = minimax.selectMove();
+
 
 console.time('selectMove');
 var move = mcts.selectMove();
 console.timeEnd('selectMove');
-console.log(sueca.getPrettyPlayerHand(sueca.currentPlayer));
-console.log(sueca.currentPlayer + ' played ' + move  + '\n');
-sueca.performMove(move);
+
+console.log(game.getPrettyPlayerHand(game.currentPlayer));
+console.log(game.currentPlayer + ' played ' + move  + '\n');
+// console.log(game.currentPlayer + ' minimax played ' + minimaxMove  + '\n');
+game.performMove(move);
 Dumper.saveAll('test.json', mcts);

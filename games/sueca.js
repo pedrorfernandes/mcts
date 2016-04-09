@@ -72,9 +72,7 @@ class Sueca {
       this.wonCards = [[], [], [], []];
       this.round = 1;
       this.suitToFollow = null;
-      this.hasSuits = new Array(4).fill({
-        '♠': true, '♥': true, '♦': true, '♣': true
-      })
+      this.hasSuits = _.range(4).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
     }
   }
 

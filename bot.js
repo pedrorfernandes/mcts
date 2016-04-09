@@ -12,7 +12,7 @@ var Dumper = require('./treeviz/dumper');
 var _ = require('lodash');
 
 var host = 'localhost:3000';
-var Game = Bisca;
+var Game = Sueca;
 var gameType = Game.name.toLowerCase();
 var game;
 var seed = rng();
@@ -30,8 +30,21 @@ var suitMap = {
 
 console.log(seed);
 
-// offset to sync tree dumps with BotWars pagination
-var movesCount = 2;
+function getInitialMovesCount() {
+  // offset to sync tree dumps with BotWars pagination
+  return 2;
+}
+
+let prefixWithGameId = true;
+function getStateFileName(gameId, movesCount) {
+  let prefix = '';
+  if (prefixWithGameId) {
+    prefix += gameId + '_';
+  }
+  return prefix + movesCount + '.json';
+}
+
+var movesCount;
 
 let mapSame = card => card;
 
@@ -89,6 +102,7 @@ let toGame = {
 
 function startHandler(event, callback) {
   game = toGame[gameType](event);
+  movesCount = getInitialMovesCount();
   console.log('Game started');
 }
 
@@ -100,9 +114,13 @@ function getSearchAlgorithm() {
 }
 
 function requestMoveHandler(event, callback) {
-  game = toGame[gameType](event);
-
-  var stateFileName = movesCount + '.json';
+  // server does not return 'hasSuits' in sueca, 
+  // so we need to maintain state for that game
+  if (gameType !== 'sueca' && gameType !== 'mini-sueca') {
+    game = toGame[gameType](event);
+  }
+  
+  var stateFileName = getStateFileName(event.gameId, movesCount);
   var searchAlgorithm = getSearchAlgorithm();
   var mcts = new searchAlgorithm(game);
   Dumper.saveState(stateFileName, mcts);
@@ -112,7 +130,7 @@ function requestMoveHandler(event, callback) {
   console.timeEnd('selectMove');
 
   callback(null, mapCardInverse(move), function(error) {
-    Dumper.saveTree(stateFileName, mcts);
+  //  Dumper.saveTree(stateFileName, mcts);
   });
 }
 
@@ -145,6 +163,8 @@ var handlers = {
 var gameInterface = {
   handleEvent : function(event, callback) {
     var eventType = event.eventType;
+    
+    console.log('Received event type ' + eventType);
 
     var handlerFn = handlers[eventType];
 
@@ -157,4 +177,4 @@ var gameInterface = {
   }
 };
 
-play(host, gameType, playerNumber, gameInterface, 'games');
+play(host, gameType, playerNumber, gameInterface, 'competitions');

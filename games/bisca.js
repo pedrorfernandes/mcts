@@ -103,21 +103,18 @@ class Bisca {
     }
 
     this.trump = getSuit(this.trumpCard);
-    this.currentPlayer = this.startingPlayer;
+    this.currentPlayer = this.getPlayerAfter(this.trumpPlayer);
     this.lastTrick = null;
-    this.trick = new Array(this.numberOfPlayers).fill(null);
-    this.wonCards = new Array(this.numberOfPlayers).fill([]);
+    this.trick = _.range(this.numberOfPlayers).map(() => null);
+    this.wonCards = _.range(this.numberOfPlayers).map(() => []);
     this.round = 1;
     this.suitToFollow = null;
-    this.hasSuits = new Array(this.numberOfPlayers).fill({
-      '♠': true, '♥': true, '♦': true, '♣': true
-    });
+    this.hasSuits = _.range(this.numberOfPlayers).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
 
-    this.score = new Array(this.numberOfPlayers).fill(0);
+    this.score = _.range(this.numberOfPlayers).map(() => 0);
     this.error = false;
     this.winners = null;
   }
-
   getPlayerCount() { return this.numberOfPlayers; }
 
   isEnded() {
@@ -214,7 +211,7 @@ class Bisca {
 
       this.previousPlayer = this.currentPlayer;
       this.lastTrick = this.trick;
-      this.trick = new Array(this.numberOfPlayers).fill(null);
+      this.trick = _.range(this.numberOfPlayers).map(() => null);
       this.currentPlayer = Bisca._toPlayer(roundWinnerIndex);
       this.round += 1;
       this.suitToFollow = null;
@@ -426,23 +423,36 @@ class Bisca {
   }
 
   getAllPossibleHands() {
-
+    throw new Error(this.constructor.name + ".getAllPossibleHands not implemented");
   }
 
   getAllPossibleStates() {
-
+    throw new Error(this.constructor.name + ".getAllPossibleStates not implemented");
   }
 
   getTeam(player) {
-
+    
   }
 
   getGameValue() {
-
+    throw new Error(this.constructor.name + ".getGameValue not implemented");
   }
 
   getPrettyPlayerHand(player) {
+    var suitOrder = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
 
+    var hand = this.hands[player].slice()
+      .filter(c => c !== null)
+      .sort(function(cardA, cardB) {
+        var valueA = suitOrder[getSuit(cardA)] * 100 + getScaledValue(cardA);
+        var valueB = suitOrder[getSuit(cardB)] * 100 + getScaledValue(cardB);
+        return valueB - valueA;
+      });
+    var grouped = _.groupBy(hand, function(card) { return getSuit(card); });
+    var string = _.reduce(grouped, function(string, suit) {
+      return string + ' | ' + suit.join(' ')
+    }, '');
+    return 'His hand is ' + string;
   }
 }
 
