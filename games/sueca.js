@@ -73,6 +73,7 @@ class Sueca {
       this.round = 1;
       this.suitToFollow = null;
       this.hasSuits = _.range(4).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
+      this.winners = null;
     }
   }
 
@@ -191,6 +192,11 @@ class Sueca {
       this.currentPlayer = roundWinner;
       this.round += 1;
       this.suitToFollow = null;
+
+      if (_.every(this.hands, hand => hand.length === 0)) {
+        this.winners = this._getWinners();
+      }
+
       return;
     }
 
@@ -220,6 +226,10 @@ class Sueca {
   }
 
   getWinners() {
+    return this.winners;
+  }
+  
+  _getWinners() {
     var team1 = [0, 2];
     var pointsTeam1 = this.getPoints(team1);
     if (pointsTeam1 >= 61) {
@@ -379,7 +389,7 @@ class Sueca {
     var pointsInHand = this.getPoints([this.currentPlayer]);
 
     var winningBonus = 0;
-    var winner = this.getWinners();
+    var winner = this._getWinners();
     if (winner && _.contains(winner, this.currentPlayer)) {
       winningBonus = 1000;
     }

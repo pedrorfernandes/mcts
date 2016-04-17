@@ -8,11 +8,12 @@ var rng = seedrandom();
 var Sueca = require('./games/sueca').Sueca;
 var MiniSueca = require('./games/mini-sueca').MiniSueca;
 var Bisca = require('./games/bisca').Bisca;
+var Hearts = require('./games/hearts').Hearts;
 var Dumper = require('./treeviz/dumper');
 var _ = require('lodash');
 
 var host = 'localhost:3000';
-var Game = Sueca;
+var Game = Hearts;
 var gameType = Game.name.toLowerCase();
 var game;
 var seed = rng();
@@ -52,7 +53,7 @@ let mapCardSueca = function(card) {
   return card.value + suitMap[card.suit];
 };
 
-let mapCard = gameType === 'sueca' ? mapCardSueca : mapSame;
+let mapCard = gameType.includes('sueca') ? mapCardSueca : mapSame;
 
 let mapCardInverseSueca = function(card) {
   return {
@@ -61,13 +62,13 @@ let mapCardInverseSueca = function(card) {
   }
 };
 
-let mapCardInverse = gameType === 'sueca' ? mapCardInverseSueca : mapSame;
+let mapCardInverse = gameType.includes('sueca') ? mapCardInverseSueca : mapSame;
 
 let mapPlayerSueca = function(player) {
   return player - 1;
 };
 
-let mapPlayer = gameType === 'sueca' ? mapPlayerSueca : mapSame;
+let mapPlayer = gameType.includes('sueca') ? mapPlayerSueca : mapSame;
 
 function toSuecaGame(event) {
 
@@ -97,7 +98,8 @@ function toBiscaGame(event) {
 
 let toGame = {
   'sueca': toSuecaGame,
-  'bisca': toBiscaGame
+  'bisca': toBiscaGame,
+  'hearts': toBiscaGame
 };
 
 function startHandler(event, callback) {

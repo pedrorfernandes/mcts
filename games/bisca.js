@@ -221,7 +221,7 @@ class Bisca {
       }
 
       if (this.deck.length === 0 && _.every(this.hands, hand => hand.length === 0)) {
-        this.winners = this.getWinners();
+        this.winners = this._getWinners();
       }
 
       this.score = this._getTeamScores();
@@ -337,6 +337,10 @@ class Bisca {
   }
 
   getWinners() {
+    return this.winners;
+  }
+  
+  _getWinners() {
     let teams = this._getTeams();
     let teamScores = this._getTeamScores();
 
@@ -370,7 +374,19 @@ class Bisca {
   }
 
   _isInvalidAssignment(hands) {
+    if (!hands) { 
+      return true; 
+    }
+    
+    let self = this;
+    
+    return _.some(hands, function isInvalid (hand, playerIndex) {
+      
+      return _.some(hand, function hasInvalidSuit (card) {
+        return self.hasSuits[playerIndex][getSuit(card)] === false;
+      });
 
+    });
   }
 
   _getSeenCards() {
@@ -404,7 +420,7 @@ class Bisca {
 
       possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
         let visibleCards = hand.filter(isCardVisible);
-        var numberOfCardsToTake = hand.filter(isCardHidden).length;
+        let numberOfCardsToTake = hand.filter(isCardHidden).length;
         return visibleCards.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
       }, this);
 
