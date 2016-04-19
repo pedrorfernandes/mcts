@@ -457,7 +457,7 @@ class Bisca {
   getPrettyPlayerHand(player) {
     var suitOrder = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
 
-    var hand = this.hands[player].slice()
+    var hand = this.hands[Bisca._toPlayerIndex(player)].slice()
       .filter(c => c !== null)
       .sort(function(cardA, cardB) {
         var valueA = suitOrder[getSuit(cardA)] * 100 + getScaledValue(cardA);

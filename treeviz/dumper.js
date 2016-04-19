@@ -5,6 +5,9 @@ var stringify = require('json-stringify-safe');
 var LZString = require('lz-string');
 
 function replacer(key, value) {
+  if (key === 'game' || key === 'mcts') {
+    return undefined;
+  }
   if (key === 'children') {
     if (!value || value.every(function(c) { return c === null })) {
       return undefined;

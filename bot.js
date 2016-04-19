@@ -4,7 +4,7 @@ var play = require('./play');
 var ISMCTS = require('./search/ismcts.js').ISMCTS;
 var Minimax = require('./search/minimax.js').Minimax;
 var seedrandom = require('seedrandom');
-var rng = seedrandom();
+var rng = seedrandom(null, { state: true });
 var Sueca = require('./games/sueca').Sueca;
 var MiniSueca = require('./games/mini-sueca').MiniSueca;
 var Bisca = require('./games/bisca').Bisca;
@@ -13,10 +13,9 @@ var Dumper = require('./treeviz/dumper');
 var _ = require('lodash');
 
 var host = 'localhost:3000';
-var Game = Hearts;
+var Game = Sueca;
 var gameType = Game.name.toLowerCase();
 var game;
-var seed = rng();
 var playerNumber = process.argv[2];
 var suitMap = {
   spades: '♠',
@@ -28,8 +27,6 @@ var suitMap = {
   '♦': 'diamonds',
   '♣': 'clubs'
 };
-
-console.log(seed);
 
 function getInitialMovesCount() {
   // offset to sync tree dumps with BotWars pagination
@@ -110,7 +107,7 @@ function startHandler(event, callback) {
 
 function getSearchAlgorithm() {
   //if (playerNumber === 1 && playerNumber === 3) {
-    return _.partialRight(ISMCTS, 10000, game.currentPlayer, seed);
+    return _.partialRight(ISMCTS, 10000, game.currentPlayer, rng);
   //}
   //return _.partialRight(Minimax, game.currentPlayer, 13);
 }
@@ -123,8 +120,8 @@ function requestMoveHandler(event, callback) {
   }
   
   var stateFileName = getStateFileName(event.gameId, movesCount);
-  var searchAlgorithm = getSearchAlgorithm();
-  var mcts = new searchAlgorithm(game);
+  var SearchAlgorithm = getSearchAlgorithm();
+  var mcts = new SearchAlgorithm(game);
   Dumper.saveState(stateFileName, mcts);
 
   console.time('selectMove');
