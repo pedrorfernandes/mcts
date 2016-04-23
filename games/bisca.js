@@ -33,6 +33,8 @@ function isCardHidden(card) {
   return card === null;
 }
 
+let hiddenCard = null;
+
 var values = {
   'A': 11, '7': 10, 'K': 4, 'J': 3, 'Q': 2, '6': 0, '5': 0, '4': 0, '3': 0, '2': 0
 };
@@ -141,16 +143,13 @@ class Bisca {
     return player - 1;
   }
 
-  getPossibleMoves(playerPerspective) {
-    if (playerPerspective && playerPerspective !== this.currentPlayer) {
-      return this.getAllPossibilities(playerPerspective);
-    }
+  getPossibleMoves() {
 
     let playerIndex = Bisca._toPlayerIndex(this.currentPlayer);
     let hand = this.hands[playerIndex];
 
-    if (hand.indexOf(null) > -1) {
-      return this.getAllPossibilities(this.currentPlayer).concat(hand.filter(card => card !== null));
+    if (hand.indexOf(hiddenCard) > -1) {
+      return this.getAllPossibilities(this.currentPlayer).concat(hand.filter(isCardVisible));
     }
 
     let playableCards = null;
@@ -163,16 +162,16 @@ class Bisca {
       playableCards = hand;
     }
 
-    if (hand.indexOf(null) > -1) {
+    if (hand.indexOf(hiddenCard) > -1) {
       return this.getAllPossibilities(this.currentPlayer).concat(playableCards);
     }
 
-    return playableCards
+    return playableCards;
   }
 
   isValidMove(player, card) {
     return player === this.currentPlayer
-      && this.getPossibleMoves(player).indexOf(card) > -1;
+      && this.getPossibleMoves().indexOf(card) > -1;
   }
 
   _putCardInTrick(playerIndex, card) {
@@ -339,7 +338,7 @@ class Bisca {
   getWinners() {
     return this.winners;
   }
-  
+
   _getWinners() {
     let teams = this._getTeams();
     let teamScores = this._getTeamScores();
@@ -355,14 +354,12 @@ class Bisca {
     return winningTeam[0].map(Bisca._toPlayer);
   }
 
-  getAllPossibilities(playerPerspective) {
-    let playerPerspectiveIndex = Bisca._toPlayerIndex(playerPerspective);
-    let playerPerspectiveHand = this.hands[playerPerspectiveIndex];
-
+  getAllPossibilities() {
+    let visibleCards = _.flatten(this.hands).filter(isCardVisible);
     let playedCards = _.flatten(this.wonCards);
-    let inRoundCards = this.trick.filter(card => card !== null);
-    let visibleDeckCards = this.deck.filter(card => card !== null);
-    let impossibilities = playerPerspectiveHand.concat(playedCards)
+    let inRoundCards = this.trick.filter(isCardVisible);
+    let visibleDeckCards = this.deck.filter(isCardVisible);
+    let impossibilities = visibleCards.concat(playedCards)
       .concat(inRoundCards).concat(visibleDeckCards);
 
     let currentPlayerIndex = Bisca._toPlayerIndex(this.currentPlayer);
@@ -374,14 +371,14 @@ class Bisca {
   }
 
   _isInvalidAssignment(hands) {
-    if (!hands) { 
-      return true; 
+    if (!hands) {
+      return true;
     }
-    
+
     let self = this;
-    
+
     return _.some(hands, function isInvalid (hand, playerIndex) {
-      
+
       return _.some(hand, function hasInvalidSuit (card) {
         return self.hasSuits[playerIndex][getSuit(card)] === false;
       });
@@ -434,7 +431,7 @@ class Bisca {
       }
       return shuffledUnknownCards.splice(0, 1)[0];
     });
-    
+
     return this;
   }
 
@@ -447,7 +444,7 @@ class Bisca {
   }
 
   getTeam(player) {
-    
+
   }
 
   getGameValue() {

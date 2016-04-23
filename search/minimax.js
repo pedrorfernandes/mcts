@@ -8,7 +8,7 @@ class MinimaxNode extends Node {
   getChildNodes() {
     var self = this;
     if (!this.children) {
-      this.possibleMoves = this.game.getPossibleMoves(this.currentPlayer);
+      this.possibleMoves = this.game.getPossibleMoves();
       this.children = this.possibleMoves.map(function(move) {
         return new MinimaxNode({
           game: self.game,

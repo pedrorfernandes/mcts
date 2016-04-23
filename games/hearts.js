@@ -56,6 +56,8 @@ function isHeartsCard(card) {
   return getSuit(card) === '♥';
 }
 
+let hiddenCard = null;
+
 var valuesScale = {
   'A': 14, 'K': 13, 'J': 12, 'Q': 11, '1': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
 };
@@ -138,8 +140,8 @@ class Hearts {
 
   getFullState() {
     return _.pick(this, [
-      'currentPlayer', 'hands', 'trick', 'lastTrick', 
-      'wonCards', 'round', 'suitToFollow', 'hasSuits', 
+      'currentPlayer', 'hands', 'trick', 'lastTrick',
+      'wonCards', 'round', 'suitToFollow', 'hasSuits',
       'error', 'winners', 'score', 'receivedHearts'
     ]);
   }
@@ -178,24 +180,25 @@ class Hearts {
       card !== null ? count + 1 : count, 0);
   }
 
-  getPossibleMoves(playerPerspective) {
-    if (playerPerspective && playerPerspective !== this.currentPlayer) {
-      return this.getAllPossibilities(playerPerspective);
-    }
+  getPossibleMoves() {
 
     let playerIndex = toPlayerIndex(this.currentPlayer);
     let hand = this.hands[playerIndex];
 
+    if (hand.indexOf(hiddenCard) > -1) {
+      return this.getAllPossibilities(this.currentPlayer);
+    }
+
     if (this.round === 1 && _.includes(hand, '2♣')) {
-      // The player with the 2 of clubs leads by playing that card. 
+      // The player with the 2 of clubs leads by playing that card.
       return ['2♣'];
     }
 
     let cardsInTableCount = this._getCardsInTableCount();
 
     if (cardsInTableCount === 0 && !this.isHeartsBroken) {
-      // You may lead a heart at the beginning of a round only 
-      //    if you have only hearts in your hand or if hearts have been broken. 
+      // You may lead a heart at the beginning of a round only
+      //    if you have only hearts in your hand or if hearts have been broken.
       // Hearts are broken when anyone plays a heart when they cannot follow suit.
       let notHearts = hand.filter(card => getSuit(card) !== '♥');
       if (notHearts.length > 0) {
@@ -219,7 +222,7 @@ class Hearts {
 
   isValidMove(player, card) {
     return player === this.currentPlayer
-      && this.getPossibleMoves(player).indexOf(card) > -1;
+      && this.getPossibleMoves().indexOf(card) > -1;
   }
 
   _updatePlayerHasSuits(playerIndex, playedCard) {
@@ -248,7 +251,7 @@ class Hearts {
       }
     }
   }
-  
+
   move(player, card) {
     let playerIndex = toPlayerIndex(player);
 
@@ -263,7 +266,7 @@ class Hearts {
       let roundWinnerIndex = this.trick.indexOf(highestCard);
 
       this.wonCards[roundWinnerIndex] = this.wonCards[roundWinnerIndex].concat(this.trick);
-      
+
       if (!this.receivedHearts[roundWinnerIndex] && _.some(this.trick, isHeartsCard)) {
         this.receivedHearts[roundWinnerIndex] = true;
       }
@@ -309,7 +312,7 @@ class Hearts {
     if (playersThatReceivedHearts.length === 1) {
       return toPlayer(playersThatReceivedHearts[0]);
     }
-    
+
     return null;
   }
 
@@ -337,7 +340,7 @@ class Hearts {
   _getScores() {
     return this._getPlayers().map(player => this.getScore([player]));
   }
-  
+
   _getWinners() {
     let players = this._getPlayers();
     let playerScores = this._getScores();
@@ -351,13 +354,11 @@ class Hearts {
     return this.winners;
   }
 
-  getAllPossibilities(playerPerspective) {
-    let playerPerspectiveIndex = toPlayerIndex(playerPerspective);
-    let playerPerspectiveHand = this.hands[playerPerspectiveIndex];
-
+  getAllPossibilities() {
+    let visibleCards = _.flatten(this.hands).filter(isCardVisible);
     let playedCards = _.flatten(this.wonCards);
     let inRoundCards = this.trick.filter(card => card !== null);
-    let impossibilities = playerPerspectiveHand.concat(playedCards).concat(inRoundCards);
+    let impossibilities = visibleCards.concat(playedCards).concat(inRoundCards);
 
     let currentPlayerIndex = toPlayerIndex(this.currentPlayer);
     let hasSuits = this.hasSuits[currentPlayerIndex];
@@ -368,10 +369,10 @@ class Hearts {
   }
 
   _isInvalidAssignment(hands) {
-    if (!hands) { 
-      return true; 
+    if (!hands) {
+      return true;
     }
-    
+
     let self = this;
 
     return _.some(hands, function isInvalid (hand, playerIndex) {

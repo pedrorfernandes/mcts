@@ -87,7 +87,7 @@ Node.prototype.getReward = function() {
 };
 
 Node.prototype.pickChild = function() {
-  var move = sample(this.game.getPossibleMoves(this.mcts.player), this.mcts.rng);
+  var move = sample(this.game.getPossibleMoves(), this.mcts.rng);
 
   return new Node({
     game: this.game,
@@ -116,7 +116,7 @@ Node.prototype.backPropagate = function(reward) {
 
 Node.prototype.getChildNodes = function() {
   if (!this.children) {
-    this.possibleMoves = this.game.getPossibleMoves(this.mcts.player);
+    this.possibleMoves = this.game.getPossibleMoves();
     this.children = _.fill(new Array(this.possibleMoves.length), null);
   }
   return this.children;

@@ -18,7 +18,8 @@ class Node {
     this.mcts = options.mcts;
     this.parent = options.parent || null;
     this.move = typeof options.move != 'undefined' ? options.move : null;
-    this.player = options.player;
+    // player that applied node.move
+    this.player = _.isNumber(options.player) ? options.player : this.game.currentPlayer;
     this.wins = 0;
     this.visits = 0;
     this.children = null;
@@ -43,10 +44,38 @@ class Node {
 
   getChildNodes() {
     if (!this.children) {
-      this.possibleMoves = this.game.getPossibleMoves(this.mcts.player);
+      this.possibleMoves = this.game.getPossibleMoves();
       this.children = _.fill(new Array(this.possibleMoves.length), null);
     }
     return this.children;
+  }
+
+  getReward(game, player) {
+    var winner = game.getWinners();
+
+    if (Array.isArray(winner) && _.contains(winner, player)) {
+      return 1;
+    }
+    else if (player === winner) {
+      return 1;
+    }
+    return 0;
+  };
+
+  backPropagate(finishedGame) {
+    let node = this;
+    let getReward = _.memoize(node.getReward.bind(node), (game, player) => player);
+    while (node != null) {
+      node.visits += 1;
+      node.wins += getReward(finishedGame, node.player);
+      node = node.parent;
+    }
+  };
+
+  determinize() {
+    let cloneGame = new this.game.constructor(this.game);
+    cloneGame = cloneGame.randomize(this.mcts.rng, this.mcts.player);
+    return cloneGame;
   }
 }
 

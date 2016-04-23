@@ -38,27 +38,6 @@ class ISMCTSNode extends Node {
     return expanded;
   }
 
-  getReward(deterministicGame, player) {
-    var winner = deterministicGame.getWinners();
-
-    if (Array.isArray(winner) && _.contains(winner, player)) {
-      return 1;
-    }
-    else if (player === winner) {
-      return 1;
-    }
-    return 0;
-  }
-
-  backPropagate(finishedGame) {
-    var node = this;
-    while (node != null) {
-      node.visits += 1;
-      node.wins += node.getReward(finishedGame, node.player);
-      node = node.parent;
-    }
-  }
-
   bestChild(explorationValue, deterministicGame) {
     var legalMoves = deterministicGame.getPossibleMoves();
     var legalChildren = this.getChildNodes().filter(function(node) {
@@ -66,9 +45,7 @@ class ISMCTSNode extends Node {
     });
 
     // easier to update availability here instead of backprop
-    legalChildren.forEach(function(node) {
-      node.avails += 1;
-    });
+    legalChildren.forEach(node => node.avails += 1);
 
     var shuffled = shuffle(legalChildren, this.mcts.rng);
     return _.max(shuffled, nodeValue.bind(null, explorationValue));
@@ -76,12 +53,6 @@ class ISMCTSNode extends Node {
 
   getMostVisitedChild() {
     return _.max(this.children, 'visits');
-  }
-
-  determinize() {
-    var clone = new ISMCTSNode(this);
-    clone.game = clone.game.randomize(this.mcts.rng, this.mcts.player);
-    return clone.game;
   }
 }
 
