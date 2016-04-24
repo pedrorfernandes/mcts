@@ -6,13 +6,8 @@ let shuffle = require('../search/shuffle').shuffle;
 let sample = require('../search/shuffle').sample;
 let Combinatorics = require('js-combinatorics');
 
-// for compatibility lodash 3 <-> 4
-let max = _.maxBy || _.max;
-let min = _.minBy || _.min;
-let sum = _.sumBy || _.sum;
-
-function toPlayer(player) {
-  return player + 1;
+function toPlayer(playerIndex) {
+  return playerIndex + 1;
 }
 
 function toPlayerIndex(player) {
@@ -62,10 +57,6 @@ let startingDeck = suits.reduce(function(deck, suit) {
   }));
 }, []);
 
-let isRandomNumberGenerator = function(object) {
-  return typeof object !== 'object';
-};
-
 function copyHands(hand) {
   let newArray = [];
   for (let i = 0; i < hand.length; i++) {
@@ -105,7 +96,7 @@ class Sueca {
     }
     this.currentPlayer = this.getPlayerAfter(this.trumpPlayer);
     this.hands = _.chunk(shuffle(startingDeck, rng), 10);
-    this.trumpCard = _.last(this.hands(toPlayerIndex(this.trumpPlayer)));
+    this.trumpCard = _.last(this.hands[toPlayerIndex(this.trumpPlayer)]);
     this.trumpSuit = getSuit(this.trumpCard);
     this.lastTrick = null;
     this.trick = _.range(numberOfPlayers).map(() => null);
@@ -116,7 +107,7 @@ class Sueca {
     this.winners = null;
 
     if (storeScores) {
-      this.score = _.range(numberOfPlayers).map(() => 0);
+      this.score = this._getTeams().map(() => 0);
     }
 
     this.error = false;
@@ -142,13 +133,15 @@ class Sueca {
     });
     this.winners = game.winners;
     this.score = game.score;
+    this.lastTrick = null;
+    this.error = game.error;
   };
 
   getFullState() {
     return _.pick(this, [
       'trumpPlayer', 'currentPlayer', 'hands', 'trumpSuit', 'trumpCard',
       'trick', 'wonCards', 'round', 'suitToFollow',
-      'hasSuits', 'winners', 'score'
+      'hasSuits', 'winners', 'score', 'lastTrick'
     ]);
   }
 
@@ -228,12 +221,12 @@ class Sueca {
     let trumps = table.filter(card => getSuit(card) === this.trumpSuit);
 
     if (trumps.length > 0) {
-      return max(trumps, getScaledValue);
+      return _.maxBy(trumps, getScaledValue);
     }
 
     let followed = table.filter(card => getSuit(card) === suitToFollow);
 
-    return max(followed, getScaledValue);
+    return _.maxBy(followed, getScaledValue);
   }
 
   _putCardInTrick(playerIndex, card) {
@@ -255,6 +248,7 @@ class Sueca {
       let roundWinnerIndex = this.trick.indexOf(highestCard);
       this.wonCards[roundWinnerIndex] = this.wonCards[roundWinnerIndex].concat(this.trick);
 
+      this.lastTrick = this.trick;
       this.trick = _.range(numberOfPlayers).map(() => null);
       this.currentPlayer = toPlayer(roundWinnerIndex);
       this.round += 1;
@@ -265,7 +259,7 @@ class Sueca {
       }
 
       if (storeScores) {
-        this.score = this._getScores();
+        this.score = this._getTeamScores();
       }
 
       return;
@@ -296,7 +290,15 @@ class Sueca {
       return cards.concat(this.wonCards[playerIndex])
     }, []);
 
-    return sum(teamWonCards, card => getValue(card));
+    return _.sumBy(teamWonCards, card => getValue(card));
+  }
+
+  _getTeams() {
+    return [[1,3], [2,4]];
+  }
+
+  _getTeamScores() {
+    return this._getTeams().map(this.getScore, this);
   }
 
   getWinners() {
@@ -363,6 +365,29 @@ class Sueca {
     return _.difference(startingDeck, this._getSeenCards());
   }
 
+  _isValidCardAssignment(playerIndex, card) {
+    return this.hasSuits[playerIndex][getSuit(card)] === true;
+  }
+
+  _isInvalidAssignment(possibleHands) {
+    if (!possibleHands) {
+      return true;
+    }
+
+    let self = this;
+
+    return _.some(possibleHands, function isInvalid (possibleHand, playerIndex) {
+
+      let realHand = self.hands[playerIndex];
+
+      if (realHand.length !== possibleHand.length) {
+        return true;
+      }
+
+      return possibleHand.indexOf(hiddenCard) > -1;
+    });
+  }
+
   randomize(rng, player) {
     let unknownCards = this._getUnknownCards();
 
@@ -377,7 +402,11 @@ class Sueca {
       possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
         let visibleCards = hand.filter(isCardVisible);
         let numberOfCardsToTake = hand.filter(isCardHidden).length;
-        return visibleCards.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
+        let cardsToTake = shuffledUnknownCards
+          .filter(this._isValidCardAssignment.bind(this, playerIndex))
+          .slice(0, numberOfCardsToTake);
+        shuffledUnknownCards = _.difference(shuffledUnknownCards, cardsToTake);
+        return visibleCards.concat(cardsToTake);
       }, this);
 
     } while (this._isInvalidAssignment(possibleHands));
@@ -456,7 +485,7 @@ class Sueca {
 
     let winningBonus = 0;
     let winner = this._getWinners();
-    if (winner && _.contains(winner, this.currentPlayer)) {
+    if (winner && _.includes(winner, this.currentPlayer)) {
       winningBonus = 1000;
     }
     else if (winner) {

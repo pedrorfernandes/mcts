@@ -13,20 +13,10 @@ var Dumper = require('./treeviz/dumper');
 var _ = require('lodash');
 
 var host = 'localhost:3000';
-var Game = Sueca;
+var Game = Hearts;
 var gameType = Game.name.toLowerCase();
 var game;
 var playerNumber = process.argv[2];
-var suitMap = {
-  spades: '♠',
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
-  '♠': 'spades',
-  '♥': 'hearts',
-  '♦': 'diamonds',
-  '♣': 'clubs'
-};
 
 function getInitialMovesCount() {
   // offset to sync tree dumps with BotWars pagination
@@ -45,62 +35,17 @@ function getStateFileName(gameId, movesCount) {
 var movesCount;
 
 let mapSame = card => card;
+let mapCard = mapSame;
+let mapCardInverse = mapSame;
+let mapPlayer = mapSame;
 
-let mapCardSueca = function(card) {
-  return card.value + suitMap[card.suit];
-};
-
-let mapCard = gameType.includes('sueca') ? mapCardSueca : mapSame;
-
-let mapCardInverseSueca = function(card) {
-  return {
-    value: card[0],
-    suit: suitMap[card[1]]
-  }
-};
-
-let mapCardInverse = gameType.includes('sueca') ? mapCardInverseSueca : mapSame;
-
-let mapPlayerSueca = function(player) {
-  return player - 1;
-};
-
-let mapPlayer = gameType.includes('sueca') ? mapPlayerSueca : mapSame;
-
-function toSuecaGame(event) {
-
-  var hands = [[], [], [], []];
-  var myPlayer = mapPlayer(playerNumber);
-
-  hands[myPlayer] = event.state.hand.map(mapCard);
-
-  return new Game({
-    hands: hands,
-    currentPlayer: mapPlayer(event.state.nextPlayer),
-    trumpCard: mapCard(event.state.trump),
-    trumpPlayer: mapPlayer(event.state.trumpPlayer),
-    trump: suitMap[event.state.trump.suit],
-    trick: [null, null, null, null],
-    wonCards: [[], [], [], []],
-    round: 1,
-    suitToFollow: null,
-    hasSuits: new Array(4).fill({ '♠': true, '♥': true, '♦': true, '♣': true })
-  });
-}
-
-function toBiscaGame(event) {
+function toGame(event) {
   event.state.currentPlayer = event.state.nextPlayer;
   return new Game(event.state);
 }
 
-let toGame = {
-  'sueca': toSuecaGame,
-  'bisca': toBiscaGame,
-  'hearts': toBiscaGame
-};
-
 function startHandler(event, callback) {
-  game = toGame[gameType](event);
+  game = toGame(event);
   movesCount = getInitialMovesCount();
   console.log('Game started');
 }
@@ -113,12 +58,8 @@ function getSearchAlgorithm() {
 }
 
 function requestMoveHandler(event, callback) {
-  // server does not return 'hasSuits' in sueca, 
-  // so we need to maintain state for that game
-  if (gameType !== 'sueca' && gameType !== 'mini-sueca') {
-    game = toGame[gameType](event);
-  }
-  
+  game = toGame(event);
+
   var stateFileName = getStateFileName(event.gameId, movesCount);
   var SearchAlgorithm = getSearchAlgorithm();
   var mcts = new SearchAlgorithm(game);
@@ -162,7 +103,7 @@ var handlers = {
 var gameInterface = {
   handleEvent : function(event, callback) {
     var eventType = event.eventType;
-    
+
     console.log('Received event type ' + eventType);
 
     var handlerFn = handlers[eventType];
@@ -176,4 +117,4 @@ var gameInterface = {
   }
 };
 
-play(host, gameType, playerNumber, gameInterface, 'competitions');
+play(host, gameType, playerNumber, gameInterface, 'games');

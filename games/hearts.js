@@ -2,16 +2,11 @@
 
 let _ = require('lodash');
 let randomGenerator = require('seedrandom');
-var shuffle = require('../search/shuffle').shuffle;
-var sample = require('../search/shuffle').sample;
+let shuffle = require('../search/shuffle').shuffle;
+let sample = require('../search/shuffle').sample;
 
-// for compatibility lodash 3 <-> 4
-let max = _.maxBy || _.max;
-let min = _.minBy || _.min;
-let sum = _.sumBy || _.sum;
-
-function toPlayer(player) {
-  return player + 1;
+function toPlayer(playerIndex) {
+  return playerIndex + 1;
 }
 
 function toPlayerIndex(player) {
@@ -58,25 +53,25 @@ function isHeartsCard(card) {
 
 let hiddenCard = null;
 
-var valuesScale = {
+let valuesScale = {
   'A': 14, 'K': 13, 'J': 12, 'Q': 11, '1': 10, '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
 };
 
-var ranks = ['A', 'K', 'J', 'Q', '1', '8', '9', '7', '6', '5', '4', '3', '2'];
-var suits = ['♠', '♥', '♦', '♣'];
+let ranks = ['A', 'K', 'J', 'Q', '1', '8', '9', '7', '6', '5', '4', '3', '2'];
+let suits = ['♠', '♥', '♦', '♣'];
 
-var startingDeck = suits.reduce(function(deck, suit) {
+let startingDeck = suits.reduce(function(deck, suit) {
   return deck.concat(ranks.map(function(rank) {
     return Card(rank, suit);
   }));
 }, []);
 
 function copyHands(hand) {
-  var newArray = [];
-  for (var i = 0; i < hand.length; i++) {
+  let newArray = [];
+  for (let i = 0; i < hand.length; i++) {
     newArray[i] = hand[i].slice();
   }
-  return newArray
+  return newArray;
 }
 
 let numberOfPlayers = 4;
@@ -107,27 +102,27 @@ class Hearts {
     this.wonCards = _.range(numberOfPlayers).map(() => []);
     this.round = 1;
     this.suitToFollow = null;
-    this.hasSuits = _.range(numberOfPlayers).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
     this.receivedHearts = _.range(numberOfPlayers).map(() => false);
     this.isHeartsBroken = false;
+    this.hasSuits = _.range(numberOfPlayers).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
 
     if (storeScores) {
       this.score = _.range(numberOfPlayers).map(() => 0);
     }
-    this.error = false;
     this.winners = null;
+    this.error = false;
   }
 
   _clone(game) {
-    this.currentPlayer = game.currentPlayer;
     this.hands = copyHands(game.hands);
+    this.currentPlayer = game.currentPlayer;
+    this.lastTrick = null;
     this.trick =  game.trick.slice();
     this.wonCards = copyHands(game.wonCards);
     this.round = game.round;
     this.suitToFollow = game.suitToFollow;
     this.receivedHearts = game.receivedHearts.slice();
     this.isHeartsBroken = game.isHeartsBroken;
-    this.score = game.score;
     this.hasSuits = game.hasSuits.map(function(playerHasSuits) {
       return {
         '♠': playerHasSuits['♠'],
@@ -135,14 +130,17 @@ class Hearts {
         '♦': playerHasSuits['♦'],
         '♣': playerHasSuits['♣']
       }
-    })
+    });
+    this.score = game.score;
+    this.winners = game.winners;
+    this.error = game.error;
   };
 
   getFullState() {
     return _.pick(this, [
-      'currentPlayer', 'hands', 'trick', 'lastTrick',
-      'wonCards', 'round', 'suitToFollow', 'hasSuits',
-      'error', 'winners', 'score', 'receivedHearts'
+      'hands', 'currentPlayer', 'lastTrick', 'trick', 'wonCards',
+      'round', 'suitToFollow',  'receivedHearts', 'isHeartsBroken',
+      'hasSuits', 'score', 'winners', 'score', 'error'
     ]);
   }
 
@@ -234,7 +232,7 @@ class Hearts {
 
   getHighestCard(table, suitToFollow) {
     let followed = table.filter(card => getSuit(card) === suitToFollow);
-    return max(followed, getScaledValue);
+    return _.maxBy(followed, getScaledValue);
   }
 
   _putCardInTrick(playerIndex, card) {
@@ -259,7 +257,7 @@ class Hearts {
     this._updatePlayerHasSuits(playerIndex, card);
     this._updateIsHeartsBroken();
 
-    var cardsInTableCount = this._getCardsInTableCount();
+    let cardsInTableCount = this._getCardsInTableCount();
 
     if (cardsInTableCount === numberOfPlayers) {
       let highestCard = this.getHighestCard(this.trick, this.suitToFollow);
@@ -330,7 +328,7 @@ class Hearts {
       return cards.concat(this.wonCards[playerIndex]);
     }, []);
 
-    return sum(wonCards, card => getValue(card));
+    return _.sumBy(wonCards, card => getValue(card));
   }
 
   _getPlayers() {
@@ -345,7 +343,7 @@ class Hearts {
     let players = this._getPlayers();
     let playerScores = this._getScores();
 
-    let minScore = min(playerScores);
+    let minScore = _.minBy(playerScores);
 
     return players.filter((player, playerIndex) => playerScores[playerIndex] === minScore);
   }
@@ -368,22 +366,6 @@ class Hearts {
     });
   }
 
-  _isInvalidAssignment(hands) {
-    if (!hands) {
-      return true;
-    }
-
-    let self = this;
-
-    return _.some(hands, function isInvalid (hand, playerIndex) {
-
-      return _.some(hand, function hasInvalidSuit (card) {
-        return self.hasSuits[playerIndex][getSuit(card)] === false;
-      });
-
-    });
-  }
-
   _getSeenCards() {
     return _.flatten(this.wonCards)
       .concat(_.flatten(this.hands).filter(isCardVisible))
@@ -394,17 +376,33 @@ class Hearts {
     return _.difference(startingDeck, this._getSeenCards());
   }
 
-  randomize(rng, player) {
-    // if (!_.isUndefined(player)) {
-    //   // clear other player hands when game is already visible
-    //   var hand = this.hands[player];
-    //   this.hands = [[],[],[],[]];
-    //   this.hands[player] = hand;
-    // }
+  _isValidCardAssignment(playerIndex, card) {
+    return this.hasSuits[playerIndex][getSuit(card)] === true;
+  }
 
+  _isInvalidAssignment(possibleHands) {
+    if (!possibleHands) {
+      return true;
+    }
+
+    let self = this;
+
+    return _.some(possibleHands, function isInvalid (possibleHand, playerIndex) {
+
+      let realHand = self.hands[playerIndex];
+
+      if (realHand.length !== possibleHand.length) {
+        return true;
+      }
+
+      return possibleHand.indexOf(hiddenCard) > -1;
+    });
+  }
+
+  randomize(rng, player) {
     let unknownCards = this._getUnknownCards();
 
-    var possibleHands, shuffledUnknownCards;
+    let possibleHands, shuffledUnknownCards;
 
     do {
 
@@ -414,8 +412,12 @@ class Hearts {
 
       possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
         let visibleCards = hand.filter(isCardVisible);
-        var numberOfCardsToTake = hand.filter(isCardHidden).length;
-        return visibleCards.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
+        let numberOfCardsToTake = hand.filter(isCardHidden).length;
+        let cardsToTake = shuffledUnknownCards
+          .filter(this._isValidCardAssignment.bind(this, playerIndex))
+          .slice(0, numberOfCardsToTake);
+        shuffledUnknownCards = _.difference(shuffledUnknownCards, cardsToTake);
+        return visibleCards.concat(cardsToTake);
       }, this);
 
     } while (this._isInvalidAssignment(possibleHands));
@@ -438,17 +440,17 @@ class Hearts {
   }
 
   getPrettyPlayerHand(player) {
-    var suitOrder = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
+    let suitOrder = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
 
-    var hand = this.hands[toPlayerIndex(player)].slice()
+    let hand = this.hands[toPlayerIndex(player)].slice()
       .filter(c => c !== null)
       .sort(function(cardA, cardB) {
-        var valueA = suitOrder[getSuit(cardA)] * 100 + getScaledValue(cardA);
-        var valueB = suitOrder[getSuit(cardB)] * 100 + getScaledValue(cardB);
+        let valueA = suitOrder[getSuit(cardA)] * 100 + getScaledValue(cardA);
+        let valueB = suitOrder[getSuit(cardB)] * 100 + getScaledValue(cardB);
         return valueB - valueA;
       });
-    var grouped = _.groupBy(hand, function(card) { return getSuit(card); });
-    var string = _.reduce(grouped, function(string, suit) {
+    let grouped = _.groupBy(hand, function(card) { return getSuit(card); });
+    let string = _.reduce(grouped, function(string, suit) {
       return string + ' | ' + suit.join(' ')
     }, '');
     return 'His hand is ' + string;

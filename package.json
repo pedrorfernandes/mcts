@@ -5,16 +5,16 @@
   "repository": "https://github.com/dbravender/mcts",
   "main": "mcts/index.js",
   "dependencies": {
-    "js-combinatorics": "^0.5.0",
-    "lodash": "^3.5.0",
-    "lz-string": "^1.4.4",
-    "request": "^2.64.0",
-    "seedrandom": "^2.4.2",
-    "ws": "^0.8.0"
+    "js-combinatorics": "0.5.0",
+    "lodash": "4.6.1",
+    "lz-string": "1.4.4",
+    "request": "2.64.0",
+    "seedrandom": "2.4.2",
+    "ws": "0.8.0"
   },
   "devDependencies": {
-    "jslint": "^0.9.0-pre005",
-    "mocha": "^2.2.1"
+    "jslint": "0.9.0-pre005",
+    "mocha": "2.2.1"
   },
   "scripts": {
     "test": "find -name '*.js' | xargs jslint && mocha"

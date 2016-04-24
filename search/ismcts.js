@@ -48,11 +48,11 @@ class ISMCTSNode extends Node {
     legalChildren.forEach(node => node.avails += 1);
 
     var shuffled = shuffle(legalChildren, this.mcts.rng);
-    return _.max(shuffled, nodeValue.bind(null, explorationValue));
+    return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
   }
 
   getMostVisitedChild() {
-    return _.max(this.children, 'visits');
+    return _.maxBy(this.children, 'visits');
   }
 }
 
@@ -78,7 +78,7 @@ var nodeValue = function(explorationValue, node) {
   return getUCB1(explorationValue, node);
 };
 
-var EXPLORATION_VALUE = Math.sqrt(2) / 2;
+var EXPLORATION_VALUE = 2 * Math.sqrt(2) / 2;
 var NO_EXPLORATION = 0;
 var getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {

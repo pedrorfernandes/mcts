@@ -77,7 +77,7 @@ function treePolicy(node) {
 Node.prototype.getReward = function() {
   var winner = this.game.getWinners();
 
-  if (Array.isArray(winner) && _.contains(winner, this.mcts.player)) {
+  if (Array.isArray(winner) && _.includes(winner, this.mcts.player)) {
     return 1;
   }
   else if (this.mcts.player === winner) {
@@ -124,7 +124,7 @@ Node.prototype.getChildNodes = function() {
 
 Node.prototype.bestChild = function(explorationValue) {
   var shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
-  return _.max(shuffled, nodeValue.bind(null, explorationValue));
+  return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
 };
 
 var nodeValue = function(explorationValue, node) {

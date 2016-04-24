@@ -5,9 +5,13 @@ let randomGenerator = require('seedrandom');
 var shuffle = require('../search/shuffle').shuffle;
 var sample = require('../search/shuffle').sample;
 
-// for compatibility lodash 3 <-> 4
-let max = _.maxBy || _.max;
-let sum = _.sumBy || _.sum;
+function toPlayer(playerIndex) {
+  return playerIndex + 1;
+}
+
+function toPlayerIndex(player) {
+  return player - 1;
+}
 
 function Card(rank, suit) {
   return rank + suit;
@@ -97,6 +101,7 @@ class Bisca {
     this.deck = initialDeck.slice(initialNumberOfDealtCards, initialDeck.length);
     this.hands = _.chunk(initialHands, numberOfCardsPerPlayer);
     this.trumpCard = _.last(this.deck);
+    this.trump = getSuit(this.trumpCard);
 
     if (options.lastGame && options.lastGame.startingPlayer) {
       this.startingPlayer = this.getPlayerAfter(options.lastGame.startingPlayer);
@@ -104,7 +109,6 @@ class Bisca {
       this.startingPlayer = Math.floor(rng() * this.numberOfPlayers + 1);
     }
 
-    this.trump = getSuit(this.trumpCard);
     this.currentPlayer = this.getPlayerAfter(this.trumpPlayer);
     this.lastTrick = null;
     this.trick = _.range(this.numberOfPlayers).map(() => null);
@@ -117,6 +121,41 @@ class Bisca {
     this.error = false;
     this.winners = null;
   }
+
+  _clone(game) {
+    this.numberOfPlayers = game.numberOfPlayers;
+    this.deck = game.deck.slice();
+    this.hands = copyHands(game.hands);
+    this.trumpCard = game.trumpCard;
+    this.trump = game.trump;
+    this.startingPlayer = game.startingPlayer;
+    this.currentPlayer = game.currentPlayer;
+    this.lastTrick = null;
+    this.trick =  game.trick.slice();
+    this.wonCards = copyHands(game.wonCards);
+    this.round = game.round;
+    this.suitToFollow = game.suitToFollow;
+    this.hasSuits = game.hasSuits.map(function(playerHasSuits) {
+      return {
+        '♠': playerHasSuits['♠'],
+        '♥': playerHasSuits['♥'],
+        '♦': playerHasSuits['♦'],
+        '♣': playerHasSuits['♣']
+      }
+    });
+    this.winners = game.winners;
+    this.score = game.score;
+    this.error = game.error;
+  };
+
+  getFullState() {
+    return _.pick(this, [
+      'numberOfPlayers', 'deck', 'hands', 'trumpCard', 'trump',
+      'startingPlayer', 'currentPlayer', 'lastTrick', 'trick', 'wonCards', 'round',
+      'suitToFollow', 'hasSuits', 'error', 'winners', 'score'
+    ]);
+  }
+
   getPlayerCount() { return this.numberOfPlayers; }
 
   isEnded() {
@@ -135,17 +174,9 @@ class Bisca {
     return teamsPerNumberOfPlayers[this.numberOfPlayers];
   }
 
-  static _toPlayer(player) {
-    return player + 1;
-  }
-
-  static _toPlayerIndex(player) {
-    return player - 1;
-  }
-
   getPossibleMoves() {
 
-    let playerIndex = Bisca._toPlayerIndex(this.currentPlayer);
+    let playerIndex = toPlayerIndex(this.currentPlayer);
     let hand = this.hands[playerIndex];
 
     if (hand.indexOf(hiddenCard) > -1) {
@@ -211,7 +242,7 @@ class Bisca {
       this.previousPlayer = this.currentPlayer;
       this.lastTrick = this.trick;
       this.trick = _.range(this.numberOfPlayers).map(() => null);
-      this.currentPlayer = Bisca._toPlayer(roundWinnerIndex);
+      this.currentPlayer = toPlayer(roundWinnerIndex);
       this.round += 1;
       this.suitToFollow = null;
 
@@ -253,17 +284,9 @@ class Bisca {
     return true;
   }
 
-  getFullState() {
-    return _.pick(this, [
-      'numberOfPlayers', 'nextPlayer', 'deck', 'hands', 'trumpCard',
-      'startingPlayer', 'trump', 'trick', 'lastTrick', 'wonCards', 'round',
-      'suitToFollow', 'hasSuits', 'error', 'winners', 'score'
-    ]);
-  }
-
   getStateView(fullState, player) {
     let self = this;
-    let playerIndex = Bisca._toPlayerIndex(player);
+    let playerIndex = toPlayerIndex(player);
     let hideIfNotTrumpCard = card => card !== self.trumpCard ? null : card;
     let hideHandIfNotPlayer = function(hand, index) {
       return playerIndex === index ? hand : hand.map(hideIfNotTrumpCard);
@@ -272,42 +295,20 @@ class Bisca {
     return _.assign({}, fullState, {
       deck: fullState.deck.map(hideIfNotTrumpCard),
       hands: fullState.hands.map(hideHandIfNotPlayer),
-      hand: fullState.hands[Bisca._toPlayerIndex(player)]
+      hand: fullState.hands[toPlayerIndex(player)]
     });
   }
-
-  _clone(game) {
-    this.numberOfPlayers = game.numberOfPlayers;
-    this.currentPlayer = game.currentPlayer;
-    this.deck = game.deck.slice();
-    this.hands = copyHands(game.hands);
-    this.trick =  game.trick.slice();
-    this.trumpCard = game.trumpCard;
-    this.trump = game.trump;
-    this.wonCards = copyHands(game.wonCards);
-    this.round = game.round;
-    this.suitToFollow = game.suitToFollow;
-    this.startingPlayer = game.startingPlayer;
-    this.hasSuits = game.hasSuits.map(function(playerHasSuits) {
-      return {
-        '♠': playerHasSuits['♠'],
-        '♥': playerHasSuits['♥'],
-        '♦': playerHasSuits['♦'],
-        '♣': playerHasSuits['♣']
-      }
-    })
-  };
 
   getHighestCard(table, suitToFollow) {
     let trumps = table.filter(card => getSuit(card) === this.trump);
 
     if (trumps.length > 0) {
-      return max(trumps, getScaledValue);
+      return _.maxBy(trumps, getScaledValue);
     }
 
     let followed = table.filter(card => getSuit(card) === suitToFollow);
 
-    return max(followed, getScaledValue);
+    return _.maxBy(followed, getScaledValue);
   }
 
   _isMandatoryToFollowSuit() {
@@ -328,7 +329,7 @@ class Bisca {
     let teamWonCards = players.reduce(
       (cards, player) => cards.concat(this.wonCards[player]), []);
 
-    return sum(teamWonCards, card => getValue(card));
+    return _.sumBy(teamWonCards, card => getValue(card));
   }
 
   _getTeamScores() {
@@ -343,7 +344,7 @@ class Bisca {
     let teams = this._getTeams();
     let teamScores = this._getTeamScores();
 
-    let maxScore = max(teamScores);
+    let maxScore = _.maxBy(teamScores);
 
     let winningTeam = teams.filter((team, teamIndex) => teamScores[teamIndex] === maxScore);
 
@@ -351,7 +352,7 @@ class Bisca {
       return null;
     }
 
-    return winningTeam[0].map(Bisca._toPlayer);
+    return winningTeam[0].map(toPlayer);
   }
 
   getAllPossibilities() {
@@ -362,7 +363,7 @@ class Bisca {
     let impossibilities = visibleCards.concat(playedCards)
       .concat(inRoundCards).concat(visibleDeckCards);
 
-    let currentPlayerIndex = Bisca._toPlayerIndex(this.currentPlayer);
+    let currentPlayerIndex = toPlayerIndex(this.currentPlayer);
     let hasSuits = this.hasSuits[currentPlayerIndex];
     return startingDeck.filter(card => {
       let suit = getSuit(card);
@@ -397,14 +398,30 @@ class Bisca {
     return _.difference(startingDeck, this._getSeenCards());
   }
 
-  randomize(rng, player) {
-    // if (!_.isUndefined(player)) {
-    //   // clear other player hands when game is already visible
-    //   var hand = this.hands[player];
-    //   this.hands = [[],[],[],[]];
-    //   this.hands[player] = hand;
-    // }
+  _isValidCardAssignment(playerIndex, card) {
+    return this.hasSuits[playerIndex][getSuit(card)] === true;
+  }
 
+  _isInvalidAssignment(possibleHands) {
+    if (!possibleHands) {
+      return true;
+    }
+
+    let self = this;
+
+    return _.some(possibleHands, function isInvalid (possibleHand, playerIndex) {
+
+      let realHand = self.hands[playerIndex];
+
+      if (realHand.length !== possibleHand.length) {
+        return true;
+      }
+
+      return possibleHand.indexOf(hiddenCard) > -1;
+    });
+  }
+
+  randomize(rng, player) {
     let unknownCards = this._getUnknownCards();
 
     var possibleHands, shuffledUnknownCards;
@@ -418,7 +435,11 @@ class Bisca {
       possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
         let visibleCards = hand.filter(isCardVisible);
         let numberOfCardsToTake = hand.filter(isCardHidden).length;
-        return visibleCards.concat(shuffledUnknownCards.splice(0, numberOfCardsToTake));
+        let cardsToTake = shuffledUnknownCards
+          .filter(this._isValidCardAssignment.bind(this, playerIndex))
+          .slice(0, numberOfCardsToTake);
+        shuffledUnknownCards = _.difference(shuffledUnknownCards, cardsToTake);
+        return visibleCards.concat(cardsToTake);
       }, this);
 
     } while (this._isInvalidAssignment(possibleHands));
@@ -454,7 +475,7 @@ class Bisca {
   getPrettyPlayerHand(player) {
     var suitOrder = { '♠': 4, '♥': 3, '♦': 2, '♣': 1 };
 
-    var hand = this.hands[Bisca._toPlayerIndex(player)].slice()
+    var hand = this.hands[toPlayerIndex(player)].slice()
       .filter(c => c !== null)
       .sort(function(cardA, cardB) {
         var valueA = suitOrder[getSuit(cardA)] * 100 + getScaledValue(cardA);

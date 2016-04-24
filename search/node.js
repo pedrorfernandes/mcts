@@ -50,10 +50,14 @@ class Node {
     return this.children;
   }
 
-  getReward(game, player) {
+  getReward(game, player, initialNode) {
     var winner = game.getWinners();
 
-    if (Array.isArray(winner) && _.contains(winner, player)) {
+    if (winner === null) {
+      return 0.5;
+    }
+
+    if (Array.isArray(winner) && _.includes(winner, player)) {
       return 1;
     }
     else if (player === winner) {
@@ -67,7 +71,7 @@ class Node {
     let getReward = _.memoize(node.getReward.bind(node), (game, player) => player);
     while (node != null) {
       node.visits += 1;
-      node.wins += getReward(finishedGame, node.player);
+      node.wins += getReward(finishedGame, node.player, this);
       node = node.parent;
     }
   };

@@ -51,7 +51,7 @@ class DeterminizedUCTNode extends Node {
 
   bestChild(explorationValue) {
     var shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
-    return _.max(shuffled, nodeValue.bind(null, explorationValue));
+    return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
   };
 }
 
