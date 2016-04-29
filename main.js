@@ -21,7 +21,7 @@ sueca.setObserver({
 });
 
 while(!sueca.getWinners()) {
-    var mcts = new ISMCTS(sueca, 10000, sueca.currentPlayer, seed);
+    var mcts = new ISMCTS(sueca, 10000, sueca.nextPlayer, seed);
     if (round !== sueca.round) {
         round = sueca.round;
         console.log('\nRound ' + round);
@@ -30,8 +30,8 @@ while(!sueca.getWinners()) {
     console.time('selectMove');
     var move = mcts.selectMove();
     console.timeEnd('selectMove');
-    console.log(sueca.getPrettyPlayerHand(sueca.currentPlayer));
-    console.log(sueca.currentPlayer + ' played ' + move  + '\n');
+    console.log(sueca.getPrettyPlayerHand(sueca.nextPlayer));
+    console.log(sueca.nextPlayer + ' played ' + move  + '\n');
     sueca.performMove(move);
 }
 

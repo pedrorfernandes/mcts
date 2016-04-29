@@ -19,7 +19,7 @@ class Node {
     this.parent = options.parent || null;
     this.move = typeof options.move != 'undefined' ? options.move : null;
     // player that applied node.move
-    this.player = _.isNumber(options.player) ? options.player : this.game.currentPlayer;
+    this.player = _.isNumber(options.player) ? options.player : this.game.nextPlayer;
     this.wins = 0;
     this.visits = 0;
     this.children = null;

@@ -6,7 +6,7 @@
 function SingleCellGame() {
   // First player to play always wins
   this.board = [null];
-  this.currentPlayer = 0;
+  this.nextPlayer = 0;
 }
 
 SingleCellGame.prototype.getPossibleMoves = function () {
@@ -20,7 +20,7 @@ SingleCellGame.prototype.performMove = function (move) {
   this.board[move] = 0;
 };
 
-SingleCellGame.prototype.getCurrentPlayer = function () {
+SingleCellGame.prototype.getNextPlayer = function () {
   return 0;
 };
 
@@ -31,7 +31,7 @@ SingleCellGame.prototype.getWinner = function () {
 function TwoCellGame() {
   // Player that plays in the 2nd cell always wins
   this.board = [null, null];
-  this.currentPlayer = 0;
+  this.nextPlayer = 0;
 }
 
 TwoCellGame.prototype.getPossibleMoves = function () {
@@ -45,13 +45,13 @@ TwoCellGame.prototype.getPossibleMoves = function () {
 };
 
 TwoCellGame.prototype.performMove = function (move) {
-  this.board[move] = this.currentPlayer;
-  this.currentPlayer += 1;
-  this.currentPlayer = this.currentPlayer % 2;
+  this.board[move] = this.nextPlayer;
+  this.nextPlayer += 1;
+  this.nextPlayer = this.nextPlayer % 2;
 };
 
-TwoCellGame.prototype.getCurrentPlayer = function () {
-  return this.currentPlayer;
+TwoCellGame.prototype.getNextPlayer = function () {
+  return this.nextPlayer;
 };
 
 TwoCellGame.prototype.getWinner = function () {
@@ -67,7 +67,7 @@ function TicTacToeGame() {
                      [8,   16,  32],
                      [64, 128, 256]];
   this.winningScores = [7, 56, 448, 73, 146, 292, 273, 84];
-  this.currentPlayer = 'X';
+  this.nextPlayer = 'X';
 }
 
 TicTacToeGame.prototype.getPossibleMoves = function () {
@@ -86,12 +86,12 @@ TicTacToeGame.prototype.getPossibleMoves = function () {
 };
 
 TicTacToeGame.prototype.performMove = function (move) {
-  this.board[move[0]][move[1]] = this.currentPlayer;
-  this.currentPlayer = this.currentPlayer === 'X' ? 'O' : 'X';
+  this.board[move[0]][move[1]] = this.nextPlayer;
+  this.nextPlayer = this.nextPlayer === 'X' ? 'O' : 'X';
 };
 
-TicTacToeGame.prototype.getCurrentPlayer = function () {
-  return this.currentPlayer;
+TicTacToeGame.prototype.getNextPlayer = function () {
+  return this.nextPlayer;
 };
 
 TicTacToeGame.prototype.getWinner = function () {

@@ -128,7 +128,7 @@ Node.prototype.bestChild = function(explorationValue) {
 };
 
 var nodeValue = function(explorationValue, node) {
-  if (node.parent.game.getCurrentPlayer() === node.mcts.player) {
+  if (node.parent.game.getNextPlayer() === node.mcts.player) {
     return getUCB1(explorationValue, node);
   }
   return - node.visits;

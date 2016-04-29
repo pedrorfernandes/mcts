@@ -5,6 +5,7 @@ let randomGenerator = require('seedrandom');
 let shuffle = require('../search/shuffle').shuffle;
 let sample = require('../search/shuffle').sample;
 let Combinatorics = require('js-combinatorics');
+let CardGame = require('./card-game').CardGame;
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -78,8 +79,9 @@ let numberOfPlayers = 4;
 
 let storeScores = false;
 
-class Sueca {
+class Sueca extends CardGame {
   constructor(options) {
+    super(options);
 
     if (isGame(options)) {
       this._clone(options);
@@ -94,7 +96,7 @@ class Sueca {
     } else {
       this.trumpPlayer = Math.floor(rng() * numberOfPlayers + 1);
     }
-    this.currentPlayer = this.getPlayerAfter(this.trumpPlayer);
+    this.nextPlayer = this.getPlayerAfter(this.trumpPlayer);
     this.hands = _.chunk(shuffle(startingDeck, rng), 10);
     this.trumpCard = _.last(this.hands[toPlayerIndex(this.trumpPlayer)]);
     this.trumpSuit = getSuit(this.trumpCard);
@@ -115,7 +117,7 @@ class Sueca {
 
   _clone(game) {
     this.trumpPlayer = game.trumpPlayer;
-    this.currentPlayer = game.currentPlayer;
+    this.nextPlayer = game.nextPlayer;
     this.hands = copyHands(game.hands);
     this.trumpSuit = game.trumpSuit;
     this.trumpCard = game.trumpCard;
@@ -139,7 +141,7 @@ class Sueca {
 
   getFullState() {
     return _.pick(this, [
-      'trumpPlayer', 'currentPlayer', 'hands', 'trumpSuit', 'trumpCard',
+      'trumpPlayer', 'nextPlayer', 'hands', 'trumpSuit', 'trumpCard',
       'trick', 'wonCards', 'round', 'suitToFollow',
       'hasSuits', 'winners', 'score', 'lastTrick'
     ]);
@@ -171,8 +173,12 @@ class Sueca {
     return this.error;
   }
 
+  _getStartingDeck() {
+    return startingDeck;
+  }
+
   getNextPlayer() {
-    return this.currentPlayer;
+    return this.nextPlayer;
   }
 
   _getCardsInTableCount() {
@@ -181,11 +187,11 @@ class Sueca {
   }
 
   getPossibleMoves() {
-    let playerIndex = toPlayerIndex(this.currentPlayer);
+    let playerIndex = toPlayerIndex(this.nextPlayer);
     let hand = this.hands[playerIndex];
 
     if (hand.indexOf(hiddenCard) > -1) {
-      return this.getAllPossibilities(this.currentPlayer).concat(hand.filter(isCardVisible));
+      return this.getAllPossibilities(this.nextPlayer).concat(hand.filter(isCardVisible));
     }
 
     if (this._getCardsInTableCount() === 0) {
@@ -206,7 +212,7 @@ class Sueca {
   }
 
   isValidMove(player, card) {
-    return player === this.currentPlayer
+    return player === this.nextPlayer
       && this.getPossibleMoves().indexOf(card) > -1;
   }
 
@@ -250,7 +256,7 @@ class Sueca {
 
       this.lastTrick = this.trick;
       this.trick = _.range(numberOfPlayers).map(() => null);
-      this.currentPlayer = toPlayer(roundWinnerIndex);
+      this.nextPlayer = toPlayer(roundWinnerIndex);
       this.round += 1;
       this.suitToFollow = null;
 
@@ -269,19 +275,19 @@ class Sueca {
       this.suitToFollow = getSuit(card);
     }
 
-    this.currentPlayer = this.getPlayerAfter(this.currentPlayer);
+    this.nextPlayer = this.getPlayerAfter(this.nextPlayer);
   }
 
   performMove(card) {
-    return this.move(this.currentPlayer, card);
+    return this.move(this.nextPlayer, card);
   }
 
   getPlayerAfter(player) {
     return (player % numberOfPlayers) + 1;
   }
 
-  getCurrentPlayer() {
-    return this.currentPlayer;
+  getNextPlayer() {
+    return this.nextPlayer;
   }
 
   getScore(players) {
@@ -327,8 +333,8 @@ class Sueca {
     let playedCards = _.flatten(this.wonCards);
     let inRoundCards = this.trick.filter(isCardVisible);
 
-    let currentPlayerIndex = toPlayerIndex(this.currentPlayer);
-    let hasSuits = this.hasSuits[currentPlayerIndex];
+    let nextPlayerIndex = toPlayerIndex(this.nextPlayer);
+    let hasSuits = this.hasSuits[nextPlayerIndex];
 
     let impossibilities = visibleCards
       .concat(playedCards).concat(inRoundCards);
@@ -339,81 +345,14 @@ class Sueca {
     });
   }
 
-  _isInvalidAssignment(hands) {
-    if (!hands) {
-      return true;
-    }
-
-    let self = this;
-
-    return _.some(hands, function isInvalid (hand, playerIndex) {
-
-      return _.some(hand, function hasInvalidSuit (card) {
-        return self.hasSuits[playerIndex][getSuit(card)] === false;
-      });
-
-    });
-  }
-
   _getSeenCards() {
     return _.flatten(this.wonCards)
       .concat(_.flatten(this.hands).filter(isCardVisible))
       .concat(this.trick.filter(isCardVisible));
   }
 
-  _getUnknownCards() {
+  getUnknownCards() {
     return _.difference(startingDeck, this._getSeenCards());
-  }
-
-  _isValidCardAssignment(playerIndex, card) {
-    return this.hasSuits[playerIndex][getSuit(card)] === true;
-  }
-
-  _isInvalidAssignment(possibleHands) {
-    if (!possibleHands) {
-      return true;
-    }
-
-    let self = this;
-
-    return _.some(possibleHands, function isInvalid (possibleHand, playerIndex) {
-
-      let realHand = self.hands[playerIndex];
-
-      if (realHand.length !== possibleHand.length) {
-        return true;
-      }
-
-      return possibleHand.indexOf(hiddenCard) > -1;
-    });
-  }
-
-  randomize(rng, player) {
-    let unknownCards = this._getUnknownCards();
-
-    var possibleHands, shuffledUnknownCards;
-
-    do {
-
-      shuffledUnknownCards = shuffle(unknownCards.slice(), rng);
-
-      possibleHands = copyHands(this.hands);
-
-      possibleHands = possibleHands.map(function distributeUnknownCards(hand, playerIndex) {
-        let visibleCards = hand.filter(isCardVisible);
-        let numberOfCardsToTake = hand.filter(isCardHidden).length;
-        let cardsToTake = shuffledUnknownCards
-          .filter(this._isValidCardAssignment.bind(this, playerIndex))
-          .slice(0, numberOfCardsToTake);
-        shuffledUnknownCards = _.difference(shuffledUnknownCards, cardsToTake);
-        return visibleCards.concat(cardsToTake);
-      }, this);
-
-    } while (this._isInvalidAssignment(possibleHands));
-
-    this.hands = possibleHands;
-
-    return this;
   }
 
   getAllPossibleHands() {
@@ -428,9 +367,9 @@ class Sueca {
 
       let playerHand = self.hands[playerIndex];
 
-      let numberOfCardsToTake = hand.filter(isCardHidden).length;
+      let numberOfCardsToTake = playerHand.filter(isCardHidden).length;
 
-      if (numberCardsToTake === 0) {
+      if (numberOfCardsToTake === 0) {
         return buildCombinations(playerIndex + 1, possibleCards, accumulator.concat([playerHand]));
       }
 
@@ -472,27 +411,27 @@ class Sueca {
     let team2 = [2, 4];
     let pointsTeam2 = this.getScore(team2);
 
-    let pointsDifferenceForCurrentPlayer;
-    if (this.currentPlayer === 1 || this.currentPlayer === 3) {
-      pointsDifferenceForCurrentPlayer = pointsTeam1 - pointsTeam2;
+    let pointsDifferenceForNextPlayer;
+    if (this.nextPlayer === 1 || this.nextPlayer === 3) {
+      pointsDifferenceForNextPlayer = pointsTeam1 - pointsTeam2;
     }
     else {
-      pointsDifferenceForCurrentPlayer = pointsTeam2 - pointsTeam1;
+      pointsDifferenceForNextPlayer = pointsTeam2 - pointsTeam1;
     }
 
-    let currentPlayerIndex = toPlayerIndex(this.currentPlayer);
-    let pointsInHand = this.getScore([currentPlayerIndex]);
+    let nextPlayerIndex = toPlayerIndex(this.nextPlayer);
+    let pointsInHand = this.getScore([nextPlayerIndex]);
 
     let winningBonus = 0;
     let winner = this._getWinners();
-    if (winner && _.includes(winner, this.currentPlayer)) {
+    if (winner && _.includes(winner, this.nextPlayer)) {
       winningBonus = 1000;
     }
     else if (winner) {
       winningBonus = -1000;
     }
 
-    return winningBonus + pointsDifferenceForCurrentPlayer + pointsInHand;
+    return winningBonus + pointsDifferenceForNextPlayer + pointsInHand;
   }
 
   getPrettyPlayerHand(player) {

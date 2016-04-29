@@ -13,7 +13,7 @@ var Dumper = require('./treeviz/dumper');
 var _ = require('lodash');
 
 var host = 'localhost:3000';
-var Game = Hearts;
+var Game = Sueca;
 var gameType = Game.name.toLowerCase();
 var game;
 var playerNumber = process.argv[2];
@@ -40,7 +40,6 @@ let mapCardInverse = mapSame;
 let mapPlayer = mapSame;
 
 function toGame(event) {
-  event.state.currentPlayer = event.state.nextPlayer;
   return new Game(event.state);
 }
 
@@ -52,9 +51,9 @@ function startHandler(event, callback) {
 
 function getSearchAlgorithm() {
   //if (playerNumber === 1 && playerNumber === 3) {
-    return _.partialRight(ISMCTS, 10000, game.currentPlayer, rng);
+    return _.partialRight(ISMCTS, 10000, game.nextPlayer, rng);
   //}
-  //return _.partialRight(Minimax, game.currentPlayer, 13);
+  //return _.partialRight(Minimax, game.nextPlayer, 13);
 }
 
 function requestMoveHandler(event, callback) {
@@ -84,8 +83,8 @@ function infoHandler(event, callback) {
 }
 
 function moveHandler(event, callback) {
-  var currentPlayer = mapPlayer(event.player);
-  if (game.currentPlayer !== currentPlayer) {
+  var nextPlayer = mapPlayer(event.player);
+  if (game.nextPlayer !== nextPlayer) {
     console.error('Game is desynchronized!', JSON.stringify(game), JSON.stringify(event));
   }
   game.performMove(mapCard(event.move));

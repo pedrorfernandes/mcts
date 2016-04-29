@@ -1,3 +1,5 @@
+'use strict';
+
 var randGen = require('seedrandom');
 
 function shuffle(array, rng) {

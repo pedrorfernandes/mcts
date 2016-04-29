@@ -27,7 +27,7 @@ class MinimaxNode extends Node {
   }
 
   isAdversaryMove() {
-    return this.game.getTeam(this.game.currentPlayer) !== this.game.getTeam(this.mcts.player);
+    return this.game.getTeam(this.game.nextPlayer) !== this.game.getTeam(this.mcts.player);
   }
 
   getRandomEventChildNodes() {

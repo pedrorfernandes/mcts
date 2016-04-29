@@ -24,7 +24,7 @@ class ISMCTSNode extends Node {
 
     var expanded = new ISMCTSNode({
       game: this.game,
-      player: deterministicGame.currentPlayer,
+      player: deterministicGame.nextPlayer,
       parent: this,
       move: move,
       depth: this.depth + 1,
@@ -104,7 +104,7 @@ function ISMCTS(game, iterations, player, rng) {
 ISMCTS.prototype.selectMove = function () {
   this.rootNode = new ISMCTSNode({
     game: this.game,
-    player: this.game.currentPlayer,
+    player: this.game.nextPlayer,
     depth: 0,
     mcts: this
   });
