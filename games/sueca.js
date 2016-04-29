@@ -356,7 +356,7 @@ class Sueca extends CardGame {
   }
 
   getAllPossibleHands() {
-    let unknownCards = this._getUnknownCards();
+    let unknownCards = this.getUnknownCards();
 
     let self = this;
     function buildCombinations(playerIndex, possibleCards, accumulator) {

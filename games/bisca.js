@@ -376,22 +376,6 @@ class Bisca extends CardGame {
     });
   }
 
-  _isInvalidAssignment(hands) {
-    if (!hands) {
-      return true;
-    }
-
-    let self = this;
-
-    return _.some(hands, function isInvalid (hand, playerIndex) {
-
-      return _.some(hand, function hasInvalidSuit (card) {
-        return self.hasSuits[playerIndex][getSuit(card)] === false;
-      });
-
-    });
-  }
-
   _getSeenCards() {
     return _.flatten(this.wonCards)
       .concat(_.flatten(this.hands).filter(isCardVisible))
@@ -401,29 +385,6 @@ class Bisca extends CardGame {
 
   getUnknownCards() {
     return _.difference(startingDeck, this._getSeenCards());
-  }
-
-  _isValidCardAssignment(playerIndex, card) {
-    return this.hasSuits[playerIndex][getSuit(card)] === true;
-  }
-
-  _isInvalidAssignment(possibleHands) {
-    if (!possibleHands) {
-      return true;
-    }
-
-    let self = this;
-
-    return _.some(possibleHands, function isInvalid (possibleHand, playerIndex) {
-
-      let realHand = self.hands[playerIndex];
-
-      if (realHand.length !== possibleHand.length) {
-        return true;
-      }
-
-      return possibleHand.indexOf(hiddenCard) > -1;
-    });
   }
 
   randomize(rng) {
