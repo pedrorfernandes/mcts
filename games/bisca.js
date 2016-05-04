@@ -2,9 +2,9 @@
 
 let _ = require('lodash');
 let randomGenerator = require('seedrandom');
-var shuffle = require('../search/shuffle').shuffle;
-var sample = require('../search/shuffle').sample;
-let CardGame = require('./card-game').CardGame;
+var shuffle = require('../utils/shuffle').shuffle;
+var sample = require('../utils/shuffle').sample;
+let CardGame = require('./card-game');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -80,7 +80,7 @@ function getNumberOfCardsPerPlayer(numberOfPlayers) {
 }
 
 function isGame(object) {
-  return object.hands && object.trick;
+  return object && object.hands && object.trick;
 }
 
 class Bisca extends CardGame {
@@ -164,10 +164,6 @@ class Bisca extends CardGame {
   }
 
   isError() { return this.error; }
-
-  _getStartingDeck() {
-    return startingDeck;
-  }
 
   getNextPlayer() { return this.nextPlayer; }
 
@@ -411,7 +407,7 @@ class Bisca extends CardGame {
   }
 
   getTeam(player) {
-
+    throw new Error(this.constructor.name + ".getTeam not implemented");
   }
 
   getGameValue() {
@@ -436,4 +432,4 @@ class Bisca extends CardGame {
   }
 }
 
-exports.Bisca = Bisca;
+module.exports = Bisca;

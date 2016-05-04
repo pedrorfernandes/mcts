@@ -2,8 +2,8 @@
 
 var _ = require('lodash');
 var randomGenerator = require('seedrandom');
-var shuffle = require('./shuffle').shuffle;
-var sample = require('./shuffle').sample;
+var shuffle = require('./../utils/shuffle').shuffle;
+var sample = require('./../utils/shuffle').sample;
 var Node = require('./node').Node;
 
 class ISMCTSNode extends Node {
@@ -90,12 +90,12 @@ var getUCB1 = function (explorationValue, node) {
   }
 };
 
-function ISMCTS(game, iterations, player, rng) {
+function ISMCTS(game, player, configs)  {
   this.game = game;
-  this.iterations = iterations || 1000;
+  this.iterations = configs.iterations || 1000;
   this.player = typeof player == 'undefined' ? 0 : player;
-  if (rng) {
-    this.rng = rng;
+  if (configs.rng) {
+    this.rng = configs.rng;
   } else {
     this.rng = randomGenerator(null, { state: true });
   }
@@ -121,4 +121,4 @@ ISMCTS.prototype.selectMove = function () {
   return this.rootNode.getMostVisitedChild().move;
 };
 
-exports.ISMCTS = ISMCTS;
+module.exports = ISMCTS;

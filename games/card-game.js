@@ -1,8 +1,8 @@
 'use strict';
 
 let _ = require('lodash');
-let shuffle = require('../search/shuffle').shuffle;
-let sample = require('../search/shuffle').sample;
+let shuffle = require('../utils/shuffle').shuffle;
+let sample = require('../utils/shuffle').sample;
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -109,6 +109,9 @@ class CardGame {
   }
 
   _assignCardToPlayer(cardIndex, playerIndex, cardArray) {
+    if (cardArray[cardIndex] === undefined) {
+      console.log('bad');
+    }
     let hiddenCardIndex = this.hands[playerIndex].indexOf(hiddenCard);
     this.hands[playerIndex][hiddenCardIndex] = cardArray[cardIndex];
   }
@@ -145,6 +148,14 @@ class CardGame {
     return this;
   }
 
+  _subtractPlayerCardsLeftToAssign(rowSum, playerIndex) {
+    if (rowSum === 0) {
+      // player already has everything assigned
+      return 1000;
+    }
+    return rowSum - this.hands[playerIndex].filter(isCardHidden).length;
+  }
+
   _assignRandomCardsWithRestrictions(unknownCards, rng) {
 
     let playerIndexes = this._getPlayerIndexesWithHiddenCards();
@@ -162,24 +173,29 @@ class CardGame {
 
     let assignmentMatrix = generateAssignmentMatrix(unknownCards, playerIndexes);
 
-    let columnsSum, minColumn, rowsSum, minRow, cellSelectFn,
-      rowOrCol, minimum, rowOrColIndex, cell, pickedCardIndex, pickedPlayerIndex;
+    let cardPossibilitySums, minColumn, playerPossibilitySums, minRow,
+      rowIndex, cell, pickedCardIndex, pickedPlayerIndex, restrictedColumnIndex;
 
     for (let i = 0; i < numberOfUnknownCards; i++) {
 
-      columnsSum = sumColumns(assignmentMatrix);
-      minColumn = _.min(columnsSum);
+      // find where [0, 0, 1] -> only one 1 and rest 0's
+      cardPossibilitySums = sumColumns(assignmentMatrix);
+      minColumn = _.min(cardPossibilitySums);
 
-      rowsSum = sumRows(assignmentMatrix);
-      minRow = _.min(rowsSum);
+      restrictedColumnIndex = _.findIndex(cardPossibilitySums, sum => sum === 1);
+      if (restrictedColumnIndex > -1) {
+        cell = [restrictedColumnIndex, assignmentMatrix[restrictedColumnIndex].indexOf(true)];
+      }
+      else {
+        // else, keep trying with player with max restrictions
+        playerPossibilitySums = sumRows(assignmentMatrix)
+          .map((sum, index) => this._subtractPlayerCardsLeftToAssign(sum, playerIndexes[index]));
+        minRow = _.min(playerPossibilitySums);
 
-      cellSelectFn = minColumn < minRow ? selectRandomValidCellIndexFromColumn : selectRandomValidCellIndexFromRow;
-      rowOrCol = minColumn < minRow ? columnsSum : rowsSum;
-      minimum = minColumn < minRow ? minColumn : minRow;
+        rowIndex = selectRandomIndexFromArrayWithFilter(playerPossibilitySums, x => x === minRow, rng);
 
-      rowOrColIndex = selectRandomIndexFromArrayWithFilter(rowOrCol, x => x === minimum, rng);
-
-      cell = cellSelectFn(assignmentMatrix, rowOrColIndex, rng);
+        cell = selectRandomValidCellIndexFromRow(assignmentMatrix, rowIndex, rng);
+      }
 
       pickedCardIndex = cell[0];
 
@@ -187,12 +203,14 @@ class CardGame {
 
       this._assignCardToPlayer(pickedCardIndex, pickedPlayerIndex, unknownCards);
 
+      // card is now assigned, we don't need it in the matrix
       unknownCards.splice(pickedCardIndex, 1);
       assignmentMatrix.splice(pickedCardIndex, 1);
 
       if (!hasUnknownCards(pickedPlayerIndex)) {
-        playerIndexes.splice(playerIndexes.indexOf(pickedPlayerIndex), 1);
-        assignmentMatrix.forEach(column => column.splice(cell[1], 1));
+        // if player is fully assigned, 0 all his possibilities
+        // playerIndexes.splice(playerIndexes.indexOf(pickedPlayerIndex), 1);
+        assignmentMatrix.forEach(column => column[cell[1]] = false);
       }
     }
 
@@ -223,4 +241,4 @@ class CardGame {
   }
 }
 
-exports.CardGame = CardGame;
+module.exports = CardGame;

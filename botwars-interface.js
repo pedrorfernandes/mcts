@@ -1,14 +1,26 @@
 'use strict';
 
-var request = require('request');
-var WebSocket = require('ws');
+let request = require('request');
+let WebSocket = require('ws');
 
-function playBotWars(host, gameHref, player, gameInterface, gameType) {
-  var playerName = 'Player ' + player;
-  var gamesUri = 'http://' + host + '/api/' + gameHref + '/' + gameType;
+function noop() {}
+
+function playBotWars(options) {
+  let host = options.host;
+  let gameHref = options.gameHref;
+  let player = options.player;
+  let gameInterface = options.gameInterface;
+  let gameType = options.gameType;
+  let gameName = options.gameName;
+  let playerName = 'Player ' + player;
+  let gamesUri = 'http://' + host + '/api/' + gameHref + '/' + gameType;
 
   if (gameType !== 'games' && gameType !== 'competitions') {
     throw new Error('Invalid game type');
+  }
+
+  function isNameToFind(game) {
+    return gameName && game.name === gameName;
   }
 
   function getRegisterUri(gameId) {
@@ -36,8 +48,8 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
   }
 
   function onMessageReceived(replySocket, gameId, data) {
-    var event = JSON.parse(data);
-    
+    let event = JSON.parse(data);
+
     event.gameId = gameId;
 
     gameInterface.handleEvent(event, function sendResult(error, result, callback) {
@@ -58,8 +70,8 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
   }
 
   function enterGame(game, playerToken, nextActionFn) {
-    var gameId = getId(game);
-    var ws = new WebSocket(getStreamUri(gameId, playerToken));
+    let gameId = getId(game);
+    let ws = new WebSocket(getStreamUri(gameId, playerToken));
 
     ws.on('open', onGameOpen.bind(null, gameId, playerToken));
     ws.on('message', onMessageReceived.bind(null, ws, gameId));
@@ -68,46 +80,49 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
   }
 
   function registerAndEnterGame(game, nextActionFn) {
-    var gameId = getId(game);
+    let gameId = getId(game);
     request.post(getRegisterUri(gameId), function(err, res, body) {
       if (err) {
         console.log('Could not register in the game');
         return;
       }
 
-      var playerToken = JSON.parse(body).playerToken;
+      let playerToken = JSON.parse(body).playerToken;
       enterGame(game, playerToken, nextActionFn)
     });
   }
 
   function enterCompetition(competition) {
-    var gameId = getId(competition);
+    let gameId = getId(competition);
     request.post(getRegisterUri(gameId), function(err, res, body) {
       if (err) {
         console.log('Could not register in the game');
         return;
       }
 
-      var playerToken = JSON.parse(body).playerToken;
+      let playerToken = JSON.parse(body).playerToken;
 
-      function searchGames () {
+      function searchCompetitionGames () {
         request.get(getCompetitionGamesUri(competition), function(err, res, body) {
-          var games = JSON.parse(body);
+          let games = JSON.parse(body);
           if (games.length === 0) {
-            setTimeout(searchGames, 2000);
+            setTimeout(searchCompetitionGames, 2000);
             return;
           }
 
-          for(var i = 0; i < games.length; i++) {
-            if(games[i].status == 'not_started') {
-              enterGame(games[i], playerToken, searchGames);
+          let game;
+          for(let i = 0; i < games.length; i++) {
+            game = games[i];
+
+            if(game.status == 'not_started') {
+              enterGame(games[i], playerToken, searchCompetitionGames);
               return;
             }
           }
         });
       }
 
-      searchGames();
+      searchCompetitionGames();
     });
   }
 
@@ -118,13 +133,19 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
         return;
       }
 
-      var games = JSON.parse(body);
-      for(var i = 0; i < games.length; i++) {
-        if(games[i].status == 'not_started') {
-          registerAndEnterGame(games[i], findGame);
+      let games = JSON.parse(body);
+
+      let game;
+      for (let i = 0; i < games.length; i++) {
+        game = games[i];
+
+        if(game.status == 'not_started' && isNameToFind(game)) {
+          registerAndEnterGame(game, findGame);
           return;
         }
       }
+
+      console.log('Could not find game to play.. Searching again in 2 seconds');
       setTimeout(findGame, 2000);
     });
   }
@@ -136,13 +157,23 @@ function playBotWars(host, gameHref, player, gameInterface, gameType) {
         return;
       }
 
-      var competitions = JSON.parse(body);
-      var competition = competitions[0];
-      enterCompetition(competition, function noop() {});
+      let competitions = JSON.parse(body);
+      let competition;
+      for (let i = 0; i < competitions.length; i++) {
+        competition = competitions[i];
+
+        if(competition.status == 'not_started' && isNameToFind(competition)) {
+          enterCompetition(competition, noop);
+          return;
+        }
+      }
+
+      console.log('Could not find competition to play.. Searching again in 2 seconds');
+      setTimeout(findCompetition, 2000);
     });
   }
 
-  var findFn = gameType === 'games' ? findGame : findCompetition;
+  let findFn = gameType === 'games' ? findGame : findCompetition;
   findFn();
 }
 

@@ -1,0 +1,45 @@
+{
+  "games": {
+    "sueca": {
+      "name": "Sueca",
+      "module": "./games/sueca"
+    },
+    "mini-sueca": {
+      "name": "MiniSueca",
+      "module": "./models/games/mini-sueca"
+    },
+    "bisca": {
+      "name": "Bisca",
+      "module": "./models/games/bisca"
+    },
+    "hearts": {
+      "name": "Hearts",
+      "module": "./models/games/hearts"
+    }
+  },
+
+  "algorithms": {
+    "ismcts": {
+      "name": "ISMCTS",
+      "module": "./search/ismcts"
+    },
+    "determinized-uct": {
+      "name": "DeterminizedUCT",
+      "module": "./search/determinized-uct"
+    },
+    "random-search": {
+      "name": "RandomSearch",
+      "module": "./search/random-search"
+    },
+    "minimax": {
+      "name": "RandomSearch",
+      "module": "./search/minimax"
+    }
+  },
+
+  "couchbase": {
+    "enabled": true,
+    "cluster": "http://localhost:8091/",
+    "bucket": "default"
+  }
+}

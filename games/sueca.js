@@ -2,10 +2,10 @@
 
 let _ = require('lodash');
 let randomGenerator = require('seedrandom');
-let shuffle = require('../search/shuffle').shuffle;
-let sample = require('../search/shuffle').sample;
+let shuffle = require('../utils/shuffle').shuffle;
+let sample = require('../utils/shuffle').sample;
 let Combinatorics = require('js-combinatorics');
-let CardGame = require('./card-game').CardGame;
+let CardGame = require('./card-game');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -72,7 +72,7 @@ function flatten (a, b) {
 }
 
 function isGame(object) {
-  return object.hands && object.trick;
+  return object && object.hands && object.trick;
 }
 
 let numberOfPlayers = 4;
@@ -88,7 +88,7 @@ class Sueca extends CardGame {
       return;
     }
 
-    let seed = options.seed;
+    let seed = _.get(options, 'seed');
     let rng = seed ? randomGenerator(seed) : randomGenerator();
     let lastGameTrumpPlayer = _.get(options, 'lastGame.trumpPlayer');
     if (lastGameTrumpPlayer) {
@@ -171,10 +171,6 @@ class Sueca extends CardGame {
 
   isError() {
     return this.error;
-  }
-
-  _getStartingDeck() {
-    return startingDeck;
   }
 
   getNextPlayer() {
@@ -284,10 +280,6 @@ class Sueca extends CardGame {
 
   getPlayerAfter(player) {
     return (player % numberOfPlayers) + 1;
-  }
-
-  getNextPlayer() {
-    return this.nextPlayer;
   }
 
   getScore(players) {
@@ -452,4 +444,4 @@ class Sueca extends CardGame {
   }
 }
 
-exports.Sueca = Sueca;
+module.exports = Sueca;

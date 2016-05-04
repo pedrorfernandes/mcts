@@ -2,9 +2,9 @@
 
 let _ = require('lodash');
 let randomGenerator = require('seedrandom');
-let shuffle = require('../search/shuffle').shuffle;
-let sample = require('../search/shuffle').sample;
-let CardGame = require('./card-game').CardGame;
+let shuffle = require('../utils/shuffle').shuffle;
+let sample = require('../utils/shuffle').sample;
+let CardGame = require('./card-game');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -78,7 +78,7 @@ function copyHands(hand) {
 let numberOfPlayers = 4;
 
 function isGame(object) {
-  return object.hands && object.trick;
+  return object && object.hands && object.trick;
 }
 
 let storeScores = false;
@@ -170,10 +170,6 @@ class Hearts extends CardGame {
     return this.error;
   }
 
-  _getStartingDeck() {
-    return startingDeck;
-  }
-
   getNextPlayer() {
     return this.nextPlayer;
   }
@@ -246,12 +242,9 @@ class Hearts extends CardGame {
     hand.splice(hand.indexOf(card), 1);
   }
 
-  _updateIsHeartsBroken() {
-    if (!this.isHeartsBroken && this.suitToFollow) {
-      let hearts = this.hands.filter(card => card ? getSuit(card) === '♥' : false);
-      if (hearts.length > 0) {
-        this.isHeartsBroken = true;
-      }
+  _updateIsHeartsBroken(playedCard) {
+    if (!this.isHeartsBroken && isHeartsCard(playedCard)) {
+      this.isHeartsBroken = true;
     }
   }
 
@@ -260,7 +253,7 @@ class Hearts extends CardGame {
 
     this._putCardInTrick(playerIndex, card);
     this._updatePlayerHasSuits(playerIndex, card);
-    this._updateIsHeartsBroken();
+    this._updateIsHeartsBroken(card);
 
     let cardsInTableCount = this._getCardsInTableCount();
 
@@ -411,4 +404,4 @@ class Hearts extends CardGame {
   }
 }
 
-exports.Hearts = Hearts;
+module.exports = Hearts;

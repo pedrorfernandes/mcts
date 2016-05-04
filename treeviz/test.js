@@ -1,18 +1,19 @@
 'use strict';
 
-let ISMCTS = require('../search/ismcts.js').ISMCTS;
+let ISMCTS = require('../search/ismcts.js');
 let stringify = require('json-stringify-safe');
 let Dumper = require('./dumper.js');
-let Minimax = require('../search/minimax.js').Minimax;
-let DeterminizedUCT = require('../search/determinized-uct').DeterminizedUCT;
+let Minimax = require('../search/minimax.js');
+let DeterminizedUCT = require('../search/determinized-uct');
 
 let seedrandom = require('seedrandom');
 let rng = seedrandom();
+let _ = require('lodash');
 
-let Sueca = require('../games/sueca').Sueca;
-let MiniSueca = require('../games/mini-sueca').MiniSueca;
-let Bisca = require('../games/bisca').Bisca;
-let Hearts = require('../games/hearts').Hearts;
+let Sueca = require('../games/sueca');
+let MiniSueca = require('../games/mini-sueca');
+let Bisca = require('../games/bisca');
+let Hearts = require('../games/hearts');
 
 let Game = Sueca;
 
@@ -59,31 +60,64 @@ let Game = Sueca;
 // hearts, to test hearts player shot the moon
 // let savedState = {"game":{"hands":[[],["3♥"],[],[]],"nextPlayer":2,"lastTrick":null,"trick":["2♥",null,"K♥","6♥"],"wonCards":[["A♠","7♠","5♠","8♠","A♦","1♦","J♦","2♦"],["6♣","K♣","J♣","2♣"],["4♦","8♦","Q♦","Q♠","K♦","9♠","J♠","3♠","9♦","4♠","6♠","2♠","7♦","6♦","K♠","1♣","3♣","A♥","9♣","7♣","3♦","Q♥","1♠","J♥","1♥","7♥","A♣","9♥","8♥","4♥","5♦","5♥"],["4♣","5♣","8♣","Q♣"]],"round":13,"suitToFollow":"♥","receivedHearts":[false,false,true,false],"isHeartsBroken":false,"hasSuits":[{"♠":false,"♥":true,"♦":false,"♣":false},{"♠":false,"♥":true,"♦":false,"♣":false},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":false,"♥":true,"♦":false,"♣":false}],"score":[0,0,22,0],"winners":null,"error":false},"rng":{"i":77,"j":80,"S":[158,99,230,194,88,32,35,195,190,111,161,171,199,22,94,122,63,106,78,229,125,24,217,83,203,60,247,189,27,116,103,208,34,1,198,46,59,48,95,215,218,150,227,156,129,182,178,77,45,155,101,87,255,40,173,205,93,69,148,206,216,113,115,6,132,70,13,66,212,197,134,91,142,81,146,220,169,180,246,8,23,175,117,97,114,219,84,186,237,0,231,164,244,192,124,165,10,210,30,170,245,138,207,118,18,68,92,54,14,128,157,123,43,213,12,222,73,191,143,241,42,153,15,202,56,109,44,172,31,20,232,38,3,86,100,25,62,177,52,228,55,107,29,21,226,188,176,131,149,135,17,183,65,254,187,147,108,127,75,82,239,167,200,19,214,240,64,179,140,139,250,253,37,51,7,141,49,9,168,225,104,160,5,57,90,193,152,47,151,174,137,72,233,126,223,133,98,50,201,11,26,154,16,184,166,185,89,159,120,28,234,251,76,96,249,53,162,224,58,4,221,2,238,209,145,61,121,85,204,243,105,242,112,33,74,80,39,235,130,41,144,211,71,163,252,236,67,79,248,102,196,36,110,181,136,119]},"player":2,"iterations":10000};
 
-let savedState = {"game":{"trumpPlayer":3,"nextPlayer":2,"hands":[[null,null,null,null,null,null,null,null,null],["4♣","J♠","3♣","4♠","7♦","Q♣","K♦","J♦","K♥"],[null,null,null,null,null,null,null,null,"2♠"],[null,null,null,null,null,null,null,null,null]],"trumpSuit":"♠","trumpCard":"2♠","trick":[null,null,null,null],"wonCards":[[],["2♥","Q♥","6♥","3♥"],[],[]],"round":2,"suitToFollow":null,"hasSuits":[{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true},{"♠":true,"♥":true,"♦":true,"♣":true}],"winners":null,"score":[0,2],"lastTrick":null},"rng":{"i":252,"j":42,"S":[239,99,68,244,70,51,200,143,170,203,110,14,52,53,182,72,114,84,74,58,181,149,19,158,248,137,2,88,154,35,5,89,37,129,155,50,153,237,163,122,115,125,38,236,94,183,24,221,207,47,4,41,86,222,145,127,113,132,92,187,196,61,167,9,218,252,142,140,60,184,243,210,242,108,6,157,241,0,103,205,211,83,42,57,133,117,121,13,80,97,201,49,255,79,199,198,25,44,206,10,12,225,223,162,226,120,147,21,238,17,116,65,204,228,101,173,251,85,168,176,151,150,172,208,212,214,161,77,109,217,215,232,240,234,27,93,250,192,177,156,130,166,31,56,95,102,104,20,111,216,185,197,26,69,119,136,227,18,36,180,253,131,75,178,91,159,135,175,87,34,107,189,98,219,229,191,8,141,152,39,186,233,202,73,138,90,32,171,118,46,146,164,247,231,209,193,128,179,62,28,81,213,54,245,230,195,45,23,220,78,165,194,11,148,16,169,144,254,63,55,82,134,66,235,246,124,139,7,174,188,22,40,224,105,190,160,1,71,96,100,123,48,76,249,126,15,3,67,112,59,43,64,29,106,33,30]},"player":2,"iterations":10000}
+// random testing
+// let savedState = {"date":"Mon May 02 2016 22:50:05 GMT+0100 (WEST)","game":{"hands":[[null,null,null],[null,null,null],["4♠","3♠","J♦","2♠"],[null,null,null]],"hasSuits":[{"♠":true,"♣":true,"♥":true,"♦":true},{"♠":false,"♣":true,"♥":false,"♦":true},{"♠":true,"♣":false,"♥":true,"♦":true},{"♠":true,"♣":false,"♥":true,"♦":false}],"lastTrick":null,"nextPlayer":3,"round":7,"score":[18,81],"suitToFollow":"♥","trick":["A♥","5♣",null,"4♥"],"trumpCard":"7♥","trumpPlayer":4,"trumpSuit":"♥","winners":null,"wonCards":[["A♠","5♠","J♠","K♠"],["3♦","A♦","4♦","7♣","3♣","A♣","Q♣","J♣","Q♠","K♥","6♠","7♠"],[],["2♣","K♣","6♥","7♥","K♦","2♦","7♦","5♥"]]},"gameId":"842973a907f60209","gameType":"sueca","id":"842973a907f60209_29","iterations":10000,"player":3,"rng":{"S":[4,124,23,90,183,163,156,108,220,248,45,119,99,16,236,232,171,233,41,166,10,196,117,230,42,231,75,151,127,145,63,76,142,91,242,83,71,247,214,101,241,188,219,251,107,82,133,187,254,98,11,135,211,37,116,36,237,130,218,229,252,27,185,31,80,192,68,96,255,60,38,73,95,88,47,246,205,122,144,81,186,207,65,103,129,85,240,234,224,177,50,14,113,243,72,215,138,238,30,160,87,213,147,7,239,150,164,209,204,67,97,132,225,18,131,77,20,61,0,105,228,94,235,149,176,15,114,197,46,174,202,70,123,154,78,9,146,52,19,170,109,203,1,6,74,194,58,201,226,250,182,184,100,48,206,51,22,93,193,106,43,110,89,40,34,169,216,25,69,136,57,168,12,139,17,86,56,84,227,134,153,39,167,121,102,208,175,62,217,49,180,32,2,53,141,152,128,35,79,172,165,249,59,3,115,33,244,223,118,212,44,190,120,54,8,173,29,126,64,66,178,5,245,92,253,13,21,200,189,143,195,181,26,162,55,157,191,159,221,28,140,199,155,198,148,111,24,137,104,125,161,112,210,158,179,222],"i":0,"j":229},"stateNumber":29,"timestamp":1462225805848,"type":"gameState"};
+// let savedState = {"date":"Tue May 03 2016 00:32:39 GMT+0100 (WEST)","game":{"hands":[[null,null,null,null],[null,null,null,null],["4♣","A♦","3♣","5♣","6♦"],[null,null,null,null]],"hasSuits":[{"♠":false,"♣":true,"♥":true,"♦":true},{"♠":false,"♣":true,"♥":true,"♦":true},{"♠":true,"♣":true,"♥":false,"♦":true},{"♠":true,"♣":false,"♥":true,"♦":true}],"lastTrick":null,"nextPlayer":3,"round":6,"score":[12,61],"suitToFollow":"♠","trick":["6♥","Q♦",null,"K♠"],"trumpCard":"6♦","trumpPlayer":3,"trumpSuit":"♦","winners":null,"wonCards":[[],[],["Q♥","4♥","5♦","7♥"],["2♠","4♠","5♠","A♠","5♥","3♥","2♥","A♥","3♠","7♣","Q♠","7♠","2♣","J♣","A♣","J♦"]]},"gameId":"63cf447a719237c3","gameType":"sueca","id":"63cf447a719237c3_25","iterations":10000,"player":3,"rng":{"S":[167,237,141,193,38,191,33,61,125,46,117,229,164,98,246,208,187,22,254,251,75,136,250,135,31,99,146,235,239,101,13,162,182,90,121,9,64,198,80,95,23,5,24,59,21,48,36,218,104,168,1,71,58,170,29,63,184,166,201,211,133,60,185,230,204,94,150,108,144,39,137,66,210,209,45,181,85,40,52,14,130,223,160,222,161,143,203,212,175,118,231,70,120,159,228,202,100,41,26,134,255,188,217,157,53,215,3,49,76,84,153,171,140,205,128,97,32,7,216,69,51,81,106,109,245,200,27,56,152,77,67,197,242,189,122,88,25,107,112,19,195,18,16,6,232,79,123,0,169,249,180,173,219,102,199,221,139,30,50,163,116,127,148,2,241,158,113,156,43,207,129,37,213,12,124,220,78,247,236,226,194,20,142,96,192,15,151,47,86,179,17,28,87,248,238,93,115,154,196,8,186,82,155,138,54,74,114,253,35,89,62,165,4,214,34,183,149,174,234,177,73,178,243,105,147,240,227,83,111,172,55,252,110,92,244,42,44,233,103,131,57,206,10,65,68,11,132,224,190,119,145,72,126,225,176,91],"i":0,"j":151},"stateNumber":25,"timestamp":1462231959642,"type":"gameState"};
+// let savedState = {"date":"Tue May 03 2016 21:36:41 GMT+0100 (WEST)","game":{"hands":[[null,null],[null],[null],["A♠","4♠"]],"hasSuits":[{"♠":true,"♣":true,"♥":false,"♦":false},{"♠":true,"♣":false,"♥":true,"♦":true},{"♠":true,"♣":false,"♥":true,"♦":true},{"♠":true,"♣":false,"♥":true,"♦":false}],"lastTrick":null,"nextPlayer":4,"round":9,"score":[55,40],"suitToFollow":"♠","trick":[null,"J♠","2♠",null],"trumpCard":"2♠","trumpPlayer":3,"trumpSuit":"♠","winners":null,"wonCards":[["7♠","Q♥","5♥","7♥","A♦","6♦","J♦","7♦","5♠","K♦","3♦","2♣"],["3♣","A♣","4♣","7♣","6♣","Q♠","4♦","6♥"],["J♣","Q♣","3♠","5♣"],["4♥","K♥","3♥","A♥","2♦","Q♦","5♦","6♠"]]},"gameId":"e5957945387cad04","gameType":"sueca","id":"e5957945387cad04_36","iterations":10000,"player":4,"rng":{"S":[122,185,154,132,81,34,93,239,228,143,66,211,243,215,87,19,201,45,14,74,55,149,8,248,235,150,186,252,72,18,209,250,104,159,153,20,199,204,188,117,60,112,41,139,138,70,83,119,241,29,48,255,191,219,59,6,157,85,103,135,11,194,152,36,206,247,38,28,111,0,172,62,170,217,165,187,238,22,214,184,24,169,123,141,168,61,96,71,178,127,94,56,115,230,100,253,10,244,233,77,240,195,176,205,50,163,49,80,33,225,91,97,110,229,63,76,197,193,105,156,151,171,181,242,116,65,160,89,43,16,30,95,21,27,106,109,175,121,183,126,190,140,12,196,226,166,174,251,23,58,210,114,254,35,52,148,118,113,84,7,40,99,220,192,9,213,67,3,180,236,92,13,82,208,69,128,203,26,161,147,86,158,167,107,37,223,218,25,39,57,46,129,198,124,68,216,1,90,42,73,101,162,130,4,125,44,131,164,142,202,32,31,249,54,88,133,234,207,155,245,137,64,102,144,136,224,145,200,177,232,47,2,17,78,5,120,231,212,179,173,182,237,51,227,189,146,134,98,222,75,246,221,15,79,108,53],"i":0,"j":210},"stateNumber":36,"timestamp":1462307801524,"type":"gameState"};
+// let savedState = {"date":"Tue May 03 2016 21:55:30 GMT+0100 (WEST)","game":{"hands":[[null,null,null,null,null,null],[null,null,null,null,null,null],[null,null,null,null,null],["A♠","K♣","A♥","6♠","3♥","Q♠"]],"hasSuits":[{"♠":true,"♣":false,"♥":true,"♦":true},{"♠":true,"♣":true,"♥":true,"♦":false},{"♠":false,"♣":true,"♥":true,"♦":true},{"♠":true,"♣":true,"♥":true,"♦":true}],"lastTrick":null,"nextPlayer":4,"round":5,"score":[27,12],"suitToFollow":"♣","trick":[null,null,"A♣",null],"trumpCard":"4♣","trumpPlayer":4,"trumpSuit":"♣","winners":null,"wonCards":[["A♦","2♦","J♦","4♦"],["7♦","Q♣","6♦","3♦","2♠","6♣","2♣","4♣"],["7♠","4♠","J♣","5♠"],[]]},"gameId":"ad96fd52af48e14f","gameType":"sueca","id":"ad96fd52af48e14f_19","iterations":10000,"player":4,"rng":{"S":[87,86,231,187,215,88,25,175,2,222,114,195,198,165,97,65,157,11,220,51,197,149,235,83,45,151,202,152,43,123,243,72,219,173,224,211,78,183,212,117,249,248,125,223,155,64,141,1,253,140,63,98,120,10,0,239,132,103,32,182,170,119,199,176,161,142,70,168,241,209,105,129,181,56,38,172,113,246,160,22,131,124,57,244,115,190,3,21,229,208,196,163,96,73,102,33,108,143,134,100,46,106,174,233,52,126,101,91,225,67,36,104,247,227,75,255,6,217,62,17,193,5,118,61,216,207,85,66,185,238,203,84,28,214,79,30,144,76,81,200,204,112,35,210,39,158,77,55,228,145,250,213,26,194,146,188,156,236,9,44,221,135,218,19,147,27,180,137,192,48,201,24,15,53,90,110,12,116,4,42,186,60,80,89,31,133,164,237,230,121,107,92,232,37,191,138,49,177,251,34,14,18,50,94,254,69,154,13,59,71,95,7,122,93,150,54,130,20,136,41,82,47,29,8,153,74,68,148,206,169,205,139,226,189,234,252,159,245,242,179,162,40,16,128,109,111,99,184,23,171,167,58,166,127,178,240],"i":0,"j":149},"stateNumber":19,"timestamp":1462308930687,"type":"gameState"};
+let savedState = {"date":"Wed May 04 2016 00:00:57 GMT+0100 (WEST)","game":{"hands":[[],[],[],[]],"hasSuits":[{"♠":true,"♣":false,"♥":false,"♦":false},{"♠":false,"♣":true,"♥":true,"♦":false},{"♠":false,"♣":false,"♥":false,"♦":true},{"♠":false,"♣":false,"♥":true,"♦":true}],"lastTrick":null,"nextPlayer":4,"round":11,"score":[60,60],"suitToFollow":null,"trick":[null,null,null,null],"trumpCard":"A♣","trumpPlayer":1,"trumpSuit":"♣","winners":null,"wonCards":[["A♥","3♥","Q♥","K♥","A♠","5♠","Q♠","4♠","A♣","5♣","K♣","4♣"],["2♥","Q♣","3♦","3♣","6♥","7♣","4♥","4♦"],["6♠","Q♦","7♠","J♠"],["2♦","K♦","6♦","A♦","K♠","2♣","6♣","J♣","3♠","5♥","J♦","7♥","2♠","J♥","5♦","7♦"]]},"gameId":"f440a5a84411d47f","gameType":"sueca","id":"f440a5a84411d47f_42","iterations":10000,"player":4,"rng":{"S":[155,92,246,123,103,101,132,46,82,161,175,50,237,59,200,33,194,245,227,28,124,100,219,177,55,251,235,186,209,249,144,182,31,115,76,168,178,8,16,137,29,232,163,79,109,173,152,247,135,11,171,116,5,38,75,105,20,244,255,43,4,207,196,129,30,241,113,159,183,18,222,10,223,189,203,204,125,121,6,239,37,167,130,131,221,93,73,211,84,61,169,62,141,63,145,47,117,25,197,114,147,170,157,53,252,72,7,195,180,42,90,119,98,231,229,106,70,96,166,228,143,192,0,9,68,40,36,69,122,3,83,156,56,151,34,154,253,51,45,185,216,60,217,89,118,250,248,236,14,225,104,87,172,19,142,187,74,97,80,126,102,26,201,230,191,150,71,206,52,110,112,254,58,208,67,17,13,176,99,27,64,35,65,108,95,164,134,242,21,88,184,1,214,94,243,49,190,205,234,127,174,86,188,133,32,66,48,77,22,153,220,199,148,128,238,78,140,226,139,81,41,44,12,138,107,111,120,136,149,160,146,179,54,15,233,23,158,213,240,85,210,198,91,193,24,224,162,181,165,218,2,202,57,215,39,212],"i":0,"j":180},"stateNumber":42,"timestamp":1462316457653,"type":"gameState"};
 
-rng = seedrandom(null, { state: true });
+rng = seedrandom(null, { state: savedState.rng });
 
 let game = new Game(savedState.game);
 
 let util = require('util');
 //console.log(util.inspect(a, {showHidden: false, depth: null}));
+/*
+let count = {};
 
- let searchAlgorithm = new ISMCTS(game, 10000, savedState.player, rng);
- // let minimax = new Minimax(game, savedState.player, 13);
+for(let i = 0; i < 200000; i++) {
 
- //let minimaxMove = minimax.selectMove();
+  if (i % 1000 === 0) {
+    console.log(i);
+  }
 
- // let searchAlgorithm = new DeterminizedUCT(game, savedState.player, { rng: rng });
+  let cloneGame = new Game(game);
+  cloneGame = cloneGame.randomize(rng, savedState.player);
+  if (_.some(cloneGame.hands, hand => _.some(hand, card => card === undefined))) {
+    throw new Error('fodeu');
+  }
+
+  let string = cloneGame.hands.toString();
+
+  if (!count[string]) {
+    count[string] = 1;
+  } else {
+    count[string] += 1;
+  }
+}
+
+console.log(count);
+console.log(Object.keys(count).length);
+*/
+
+let searchAlgorithm = new ISMCTS(game, savedState.player, {rng: rng, iterations: 10000});
+
+// let minimax = new Minimax(game, savedState.player, 13);
+
+//let minimaxMove = minimax.selectMove();
+
+//let searchAlgorithm = new DeterminizedUCT(game, savedState.player, { rng: rng });
 
 
- console.time('selectMove');
- let move = searchAlgorithm.selectMove();
- console.timeEnd('selectMove');
+console.time('selectMove');
+let move = searchAlgorithm.selectMove();
+console.timeEnd('selectMove');
 
- console.log(game.getPrettyPlayerHand(game.nextPlayer));
- console.log(game.nextPlayer + ' played ' + move  + '\n');
- // console.log(game.currentPlayer + ' minimax played ' + minimaxMove  + '\n');
- // game.performMove(move);
- console.time('save');
- Dumper.saveAll('test.json', searchAlgorithm);
- console.timeEnd('save');
+console.log(game.getPrettyPlayerHand(game.nextPlayer));
+console.log(game.nextPlayer + ' played ' + move  + '\n');
+// console.log(game.currentPlayer + ' minimax played ' + minimaxMove  + '\n');
+// game.performMove(move);
+console.time('save');
+Dumper.saveGameStateAndTreeToFiles('test.json', searchAlgorithm);
+console.timeEnd('save');

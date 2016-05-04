@@ -1,16 +1,18 @@
 {
   "name": "mcts",
   "version": "0.0.6",
-  "description": "Monte Carlo Tree Search library",
-  "repository": "https://github.com/dbravender/mcts",
-  "main": "mcts/index.js",
+  "description": "Monte Carlo Tree Search library for card games",
+  "main": "bot.js",
   "dependencies": {
     "js-combinatorics": "0.5.0",
     "lodash": "4.6.1",
     "lz-string": "1.4.4",
     "request": "2.64.0",
     "seedrandom": "2.4.2",
-    "ws": "0.8.0"
+    "ws": "0.8.0",
+    "bluebird": "3.1.4",
+    "couchbase": "2.1.4",
+    "commander": "2.9.0"
   },
   "devDependencies": {
     "jslint": "0.9.0-pre005",

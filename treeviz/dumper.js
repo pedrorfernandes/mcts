@@ -1,8 +1,9 @@
 'use strict';
 
-var fs = require('fs');
-var stringify = require('json-stringify-safe');
-var LZString = require('lz-string');
+let fs = require('fs');
+let stringify = require('json-stringify-safe');
+let LZString = require('lz-string');
+let database = require('../utils/database');
 
 function replacer(key, value) {
   if (key === 'game' || key === 'mcts') {
@@ -21,10 +22,10 @@ function replacer(key, value) {
   return value;
 }
 
-var saveGameTree = function(fileName, mcts) {
-  var gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
-  var compressedData = LZString.compressToUTF16(gameTreeJson);
-  var treeFilePath = __dirname + '/trees/' + fileName;
+let saveGameTreeToFile = function(fileName, mcts) {
+  let gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
+  let compressedData = LZString.compressToUTF16(gameTreeJson);
+  let treeFilePath = __dirname + '/trees/' + fileName;
   fs.writeFile(treeFilePath, compressedData, function(err) {
     if(err) {
       return console.log(err);
@@ -34,26 +35,56 @@ var saveGameTree = function(fileName, mcts) {
   });
 };
 
-var saveGameState = function(fileName, mcts) {
-  var stateJson = JSON.stringify({
+let prefixWithGameId = true;
+function getStateFileName(gameId, movesCount) {
+  let prefix = '';
+  if (prefixWithGameId) {
+    prefix += gameId + '_';
+  }
+  return prefix + movesCount + '.json';
+}
+
+let saveGameStateToFile = function(fileName, mcts) {
+  let stateFilePath = __dirname + '/states/' + fileName;
+
+  let stateJson = JSON.stringify({
     game: mcts.game,
+    gameType: mcts.game.constructor.name.toLowerCase(),
     rng: mcts.rng ? mcts.rng.state() : null,
     player: mcts.player,
     iterations: mcts.iterations
   });
 
-  var stateFilePath = __dirname + '/states/' + fileName;
   fs.writeFileSync(stateFilePath, stateJson);
-  console.log("The state dump was saved into a file!");
+  console.log("The state dump was stored!");
 };
 
-var saveAll = function(fileName, mcts) {
-  saveGameTree(fileName, mcts);
-  saveGameState(fileName, mcts);
+let saveGameStateToDatabase = function(mcts, event, stateNumber) {
+
+  let stateJson = {
+    id: event.gameId + '_' + stateNumber,
+    stateNumber: stateNumber,
+    date: (new Date()).toString(),
+    timestamp: Date.now(),
+    gameId: event.gameId,
+    game: mcts.game,
+    gameType: mcts.game.constructor.name.toLowerCase(),
+    rng: mcts.rng ? mcts.rng.state() : null,
+    player: mcts.player,
+    iterations: mcts.iterations
+  };
+
+  return database.gameStates.save(stateJson);
+};
+
+let saveGameStateAndTreeToFiles = function(fileName, mcts) {
+  saveGameTreeToFile(fileName, mcts);
+  saveGameStateToFile(fileName, mcts);
 };
 
 module.exports = {
-  saveTree: saveGameTree,
-  saveState: saveGameState,
-  saveAll: saveAll
+  saveGameTreeToFile: saveGameTreeToFile,
+  saveGameStateToDatabase: saveGameStateToDatabase,
+  saveGameStateToFile: saveGameStateToFile,
+  saveGameStateAndTreeToFiles: saveGameStateAndTreeToFiles
 };

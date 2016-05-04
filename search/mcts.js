@@ -4,8 +4,8 @@
 
 var _ = require('lodash');
 var randomGenerator = require('seedrandom');
-var shuffle = require('./shuffle').shuffle;
-var sample = require('./shuffle').sample;
+var shuffle = require('./../utils/shuffle').shuffle;
+var sample = require('./../utils/shuffle').sample;
 
 function Node(options) {
   this.game = new options.game.constructor(options.game);
@@ -146,12 +146,12 @@ var getUCB1 = function (explorationValue, node) {
   }
 };
 
-function MCTS(game, iterations, player, rng) {
+function MCTS(game, player, configs) {
   this.game = game;
-  this.iterations = iterations || 1000;
+  this.iterations = configs.iterations || 1000;
   this.player = typeof player == 'undefined' ? 0 : player;
-  if (rng) {
-    this.rng = rng;
+  if (configs.rng) {
+    this.rng = configs.rng;
   } else {
     this.rng = randomGenerator(null, { state: true });
   }
@@ -173,4 +173,4 @@ MCTS.prototype.selectMove = function () {
   return this.rootNode.bestChild(NO_EXPLORATION).move;
 };
 
-exports.MCTS = MCTS;
+module.exports = MCTS;

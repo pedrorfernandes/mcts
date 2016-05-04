@@ -45,10 +45,10 @@ class MinimaxNode extends Node {
   }
 }
 
-function Minimax(game, player, depth) {
+function Minimax(game, player, configs) {
   this.game = game;
   this.player = typeof player == 'undefined' ? 0 : player;
-  this.depth = depth;
+  this.depth = configs.depth;
 }
 
 function minimax(node, depth, alpha, beta) {
@@ -59,7 +59,7 @@ function minimax(node, depth, alpha, beta) {
 
   var children = node.getChildNodes();
   var childIndex;
-    
+
   if (node.isAdversaryMove()) {
     node.value = +Infinity;
     for(childIndex = 0; childIndex < children.length; childIndex++) {
@@ -81,7 +81,7 @@ function minimax(node, depth, alpha, beta) {
       }
     }
   }
-  
+
   return node.value;
 }
 
@@ -121,4 +121,4 @@ Minimax.prototype.selectMove = function () {
   return getMostVotedNode(moveVotes).move;
 };
 
-exports.Minimax = Minimax;
+module.exports = Minimax;

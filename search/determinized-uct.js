@@ -4,8 +4,8 @@
 
 var _ = require('lodash');
 var randomGenerator = require('seedrandom');
-var shuffle = require('./shuffle').shuffle;
-var sample = require('./shuffle').sample;
+var shuffle = require('./../utils/shuffle').shuffle;
+var sample = require('./../utils/shuffle').sample;
 var Node = require('./node').Node;
 
 class DeterminizedUCTNode extends Node {
@@ -154,4 +154,4 @@ DeterminizedUCT.prototype.selectMove = function () {
   return this.rootNode.bestChild(NO_EXPLORATION).move;
 };
 
-exports.DeterminizedUCT = DeterminizedUCT;
+module.exports = DeterminizedUCT;
