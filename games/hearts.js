@@ -170,6 +170,10 @@ class Hearts extends CardGame {
     return this.error;
   }
 
+  isTie() {
+    return this.winners && this.winners.length >= 2;
+  }
+
   getNextPlayer() {
     return this.nextPlayer;
   }

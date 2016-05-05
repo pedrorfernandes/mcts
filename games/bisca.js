@@ -165,6 +165,11 @@ class Bisca extends CardGame {
 
   isError() { return this.error; }
 
+  isTie() {
+    // TODO consider bisca of 4
+    return this.winners && this.winners.length >= 2;
+  }
+
   getNextPlayer() { return this.nextPlayer; }
 
   _getCardsInTableCount() {
@@ -349,11 +354,7 @@ class Bisca extends CardGame {
 
     let winningTeam = teams.filter((team, teamIndex) => teamScores[teamIndex] === maxScore);
 
-    if (winningTeam.length > 1) {
-      return null;
-    }
-
-    return winningTeam[0].map(toPlayer);
+    return _.flatten(winningTeam).map(toPlayer);
   }
 
   getAllPossibilities() {
