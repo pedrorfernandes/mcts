@@ -110,7 +110,7 @@ class CardGame {
 
   _assignCardToPlayer(cardIndex, playerIndex, cardArray) {
     if (cardArray[cardIndex] === undefined) {
-      console.log('bad');
+      throw new Error('Randomize failed!!');
     }
     let hiddenCardIndex = this.hands[playerIndex].indexOf(hiddenCard);
     this.hands[playerIndex][hiddenCardIndex] = cardArray[cardIndex];

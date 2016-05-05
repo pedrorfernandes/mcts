@@ -92,7 +92,7 @@ class Sueca extends CardGame {
     let rng = seed ? randomGenerator(seed) : randomGenerator();
     let lastGameTrumpPlayer = _.get(options, 'lastGame.trumpPlayer');
     if (lastGameTrumpPlayer) {
-      this.trumpPlayer = Sueca.getPlayerAfter(lastGameTrumpPlayer);
+      this.trumpPlayer = this.getPlayerAfter(lastGameTrumpPlayer);
     } else {
       this.trumpPlayer = Math.floor(rng() * numberOfPlayers + 1);
     }
@@ -171,6 +171,10 @@ class Sueca extends CardGame {
 
   isError() {
     return this.error;
+  }
+
+  isTie() {
+    return _.isEqual(this.winners, [1,2,3,4]);
   }
 
   getNextPlayer() {
@@ -317,7 +321,7 @@ class Sueca extends CardGame {
     }
 
     // tie
-    return null;
+    return [1,2,3,4];
   }
 
   getAllPossibilities() {

@@ -2,7 +2,7 @@
 /*jslint indent: 2 */
 'use strict';
 
-var _ = require('lodash');
+let _ = require('lodash');
 
 function isExpanded(node) {
   return node !== null;
@@ -33,8 +33,8 @@ class Node {
   }
 
   getUntriedMoves(deterministicGame) {
-    var triedMoves = this.getChildNodes().filter(isExpanded).map(getMove);
-    var legalMoves = deterministicGame.getPossibleMoves();
+    let triedMoves = this.getChildNodes().filter(isExpanded).map(getMove);
+    let legalMoves = deterministicGame.getPossibleMoves();
     return _.difference(legalMoves, triedMoves);
   }
 
@@ -51,18 +51,17 @@ class Node {
   }
 
   getReward(game, player, initialNode) {
-    var winner = game.getWinners();
-
-    if (winner === null) {
+    let winners = game.getWinners();
+    let isWinner = _.includes(winners, player);
+    
+    if (game.isTie() && isWinner) {
       return 0.5;
     }
 
-    if (Array.isArray(winner) && _.includes(winner, player)) {
+    if (isWinner) {
       return 1;
     }
-    else if (player === winner) {
-      return 1;
-    }
+    
     return 0;
   };
 
