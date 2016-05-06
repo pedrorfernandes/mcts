@@ -83,6 +83,8 @@ function isGame(object) {
   return object && object.hands && object.trick;
 }
 
+let storeScores = false;
+
 class Bisca extends CardGame {
   constructor(options) {
     super(options);
@@ -110,7 +112,7 @@ class Bisca extends CardGame {
       this.startingPlayer = Math.floor(rng() * this.numberOfPlayers + 1);
     }
 
-    this.nextPlayer = this.getPlayerAfter(this.trumpPlayer);
+    this.nextPlayer = this.startingPlayer;
     this.lastTrick = null;
     this.trick = _.range(this.numberOfPlayers).map(() => null);
     this.wonCards = _.range(this.numberOfPlayers).map(() => []);
@@ -118,7 +120,9 @@ class Bisca extends CardGame {
     this.suitToFollow = null;
     this.hasSuits = _.range(this.numberOfPlayers).map(() => ({ '♠': true, '♥': true, '♦': true, '♣': true }));
 
-    this.score = _.range(this.numberOfPlayers).map(() => 0);
+    if (storeScores) {
+      this.score = _.range(this.numberOfPlayers).map(() => 0);
+    }
     this.error = false;
     this.winners = null;
   }
@@ -260,7 +264,9 @@ class Bisca extends CardGame {
         this.winners = this._getWinners();
       }
 
-      this.score = this._getTeamScores();
+      if (storeScores) {
+        this.score = this._getTeamScores();
+      }
 
       return;
     }
@@ -350,7 +356,7 @@ class Bisca extends CardGame {
     let teams = this._getTeams();
     let teamScores = this._getTeamScores();
 
-    let maxScore = _.maxBy(teamScores);
+    let maxScore = _.max(teamScores);
 
     let winningTeam = teams.filter((team, teamIndex) => teamScores[teamIndex] === maxScore);
 

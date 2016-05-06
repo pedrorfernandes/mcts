@@ -345,7 +345,7 @@ class Hearts extends CardGame {
     let players = this._getPlayers();
     let playerScores = this._getScores();
 
-    let minScore = _.minBy(playerScores);
+    let minScore = _.min(playerScores);
 
     return players.filter((player, playerIndex) => playerScores[playerIndex] === minScore);
   }
