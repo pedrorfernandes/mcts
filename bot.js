@@ -55,14 +55,15 @@ function requestMoveHandler(event, callback) {
 
   let mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
   console.time('saveGameStateToDatabase');
-  Dumper.saveGameStateToDatabase(mcts, event, movesCount).then(function() {
-    console.timeEnd('saveGameStateToDatabase');
-    console.time('selectMove');
-    let move = mcts.selectMove();
-    console.timeEnd('selectMove');
+  Dumper.saveGameStateToDatabase(mcts, event, movesCount, program.algorithm, searchOptions)
+    .then(function() {
+      console.timeEnd('saveGameStateToDatabase');
+      console.time('selectMove');
+      let move = mcts.selectMove();
+      console.timeEnd('selectMove');
 
-    callback(null, mapCardInverse(move));
-  });
+      callback(null, mapCardInverse(move));
+    });
 }
 
 function stateHandler(event, callback) {

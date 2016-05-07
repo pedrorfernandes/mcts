@@ -65,9 +65,10 @@ function select(node, deterministicGame) {
 }
 
 ISMCTS.prototype.simulate = function(deterministicGame) {
-  var possibleMoves = deterministicGame.getPossibleMoves();
+  let possibleMoves = deterministicGame.getPossibleMoves();
+  let move;
   while(!_.isEmpty(possibleMoves)) {
-    var move = sample(possibleMoves, this.rng);
+    move = sample(possibleMoves, this.rng);
     deterministicGame.performMove(move);
     possibleMoves = deterministicGame.getPossibleMoves();
   }

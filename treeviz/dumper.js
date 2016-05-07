@@ -59,10 +59,12 @@ let saveGameStateToFile = function(fileName, mcts) {
   console.log("The state dump was stored!");
 };
 
-let saveGameStateToDatabase = function(mcts, event, stateNumber) {
+let saveGameStateToDatabase = function(mcts, event, stateNumber, searchAlgorithm, searchOptions) {
 
   let stateJson = {
     id: event.gameId + '_' + stateNumber,
+    searchAlgorithm: searchAlgorithm,
+    searchOptions: searchOptions,
     stateNumber: stateNumber,
     date: (new Date()).toString(),
     timestamp: Date.now(),

@@ -37,18 +37,6 @@ class DeterminizedUCTNode extends Node {
     return expanded;
   };
 
-  pickChild() {
-    var move = sample(this.game.getPossibleMoves(), this.mcts.rng);
-
-    return new DeterminizedUCTNode({
-      game: this.game,
-      parent: this,
-      move: move,
-      depth: this.depth + 1,
-      mcts: this.mcts
-    });
-  };
-
   bestChild(explorationValue) {
     var shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
     return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
@@ -72,10 +60,15 @@ function treePolicy(node) {
 }
 
 function simulate(node) {
-  while(!node.isTerminal()) {
-    node = node.pickChild();
+  let clonedGame = new node.game.constructor(node.game);
+  let possibleMoves = node.game.getPossibleMoves();
+  let move;
+  while(!_.isEmpty(possibleMoves)) {
+    move = sample(possibleMoves, node.mcts.rng);
+    clonedGame.performMove(move);
+    possibleMoves = clonedGame.getPossibleMoves();
   }
-  return node.game;
+  return clonedGame;
 }
 
 var nodeValue = function(explorationValue, node) {
