@@ -94,8 +94,8 @@ class Bisca extends CardGame {
       return;
     }
 
-    let seed = options.seed;
-    this.numberOfPlayers = options.numberOfPlayers || 2;
+    let seed = _.get(options, 'seed');
+    this.numberOfPlayers = _.get(options, 'numberOfPlayers') || 2;
     let numberOfCardsPerPlayer = getNumberOfCardsPerPlayer(this.numberOfPlayers);
     let rng = seed ? randomGenerator(seed) : randomGenerator();
     let initialDeck = shuffle(startingDeck, rng);
@@ -106,8 +106,10 @@ class Bisca extends CardGame {
     this.trumpCard = _.last(this.deck);
     this.trump = getSuit(this.trumpCard);
 
-    if (options.lastGame && options.lastGame.startingPlayer) {
-      this.startingPlayer = this.getPlayerAfter(options.lastGame.startingPlayer);
+    let lastGameStartingPlayer = _.get(options, 'lastGame.startingPlayer');
+
+    if (lastGameStartingPlayer) {
+      this.startingPlayer = this.getPlayerAfter(lastGameStartingPlayer);
     } else {
       this.startingPlayer = Math.floor(rng() * this.numberOfPlayers + 1);
     }

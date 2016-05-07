@@ -112,7 +112,6 @@ DeterminizedUCT.prototype.selectMove = function () {
   let initialNode = new Node({ game: this.game, depth: 0, mcts: this });
 
   for(let d = 0; d < this.determinizations; d++) {
-    console.log(d);
     let deterministicGame = initialNode.determinize();
 
     let rootNode = new DeterminizedUCTNode({

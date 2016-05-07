@@ -92,7 +92,7 @@ class Hearts extends CardGame {
       return;
     }
 
-    let seed = options.seed;
+    let seed = _.get(options, 'seed');
     let rng = seed ? randomGenerator(seed) : randomGenerator();
     let shuffledDeck = shuffle(startingDeck, rng);
     this.hands = _.chunk(shuffledDeck, shuffledDeck.length / numberOfPlayers);
