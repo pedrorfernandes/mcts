@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="vendor/c3/c3.min.css">
+    <title>Title</title>
+</head>
+<body>
+
+<div id="chart1"></div>
+
+<div id="chart2"></div>
+
+</body>
+
+<script src="vendor/d3/d3.min.js"></script>
+<script src="vendor/c3/c3.min.js"></script>
+
+<script>
+    function toDataColumns(dataObject) {
+        return Object.keys(dataObject).map(function (playerKey) {
+            return [playerKey].concat(dataObject[playerKey]);
+        });
+    }
+
+    var winRateOverGames = {{winRateOverGames}}
+
+    var winRateColumns = toDataColumns(winRateOverGames);
+
+    var chart1 = c3.generate({
+        bindto: '#chart1',
+        type: 'spline',
+        data: {
+            columns: winRateColumns
+        },
+        point: {
+            show: false
+        },
+        zoom: {
+            enabled: true
+        },
+        grid: {
+            x: {
+                show: true
+            },
+            y: {
+                show: true
+            }
+        },
+        axis: {
+            x: {
+                tick: {
+                    count: 100,
+                    format: function (number) {
+                        return (number + 1).toFixed(0);
+                    }
+                }
+            },
+            y: {
+                padding: {
+                    top: 0,
+                    bottom: 0
+                }
+            }
+        }
+    });
+
+    var scoresOverGames = {{scoresOverGames}}
+
+    var scoresColumns = toDataColumns(scoresOverGames);
+
+    var chart2 = c3.generate({
+        bindto: '#chart2',
+        data: {
+            columns: scoresColumns,
+            types: {
+                '1': 'line',
+                '2': 'line',
+                '3': 'line',
+                '4': 'line'
+            },
+            // groups: [['1', '2', '3', '4']]
+        },
+        point: {
+            show: false
+        },
+        zoom: {
+            enabled: true
+        },
+        grid: {
+            x: {
+                show: true
+            },
+            y: {
+                show: true
+            }
+        },
+        axis: {
+            x: {
+                tick: {
+                    count: 100,
+                    format: function (number) {
+                        return (number + 1).toFixed(0);
+                    }
+                }
+            },
+            y: {
+                padding: {
+                    top: 0,
+                    bottom: 0
+                }
+            }
+        }
+    });
+
+</script>
+
+</html>

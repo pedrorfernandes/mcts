@@ -321,7 +321,9 @@ class Hearts extends CardGame {
       let playerThatShotTheMoon = this._getPlayerThatShotTheMoon();
 
       if (playerThatShotTheMoon) {
-        return players.map(player => player === playerThatShotTheMoon ? 0 : 26);
+        return players.reduce((score, player) => {
+          player !== playerThatShotTheMoon ? score += 26 : score
+        }, 0);
       }
     }
 
