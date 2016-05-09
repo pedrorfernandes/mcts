@@ -53,10 +53,10 @@ let databaseInstancePromise = new Promise(function (resolve, reject) {
 
 databaseInstancePromise.then(dbInstance => {
 
-    let players = [1,2,3,4];
-    let winRateOverGames = { '1': [], '2': [], '3': [], '4': [] };
-    let scoresOverGames = { '1': [], '2': [], '3': [], '4': [] };
-    let winCount = { '1': 0, '2': 0, '3': 0, '4': 0 };
+    let players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
+    let winRateOverGames = { 'Player 1': [], 'Player 2': [], 'Player 3': [], 'Player 4': [] };
+    let scoresOverGames = { 'Player 1': [], 'Player 2': [], 'Player 3': [], 'Player 4': [] };
+    let winCount = { 'Player 1': 0, 'Player 2': 0, 'Player 3': 0, 'Player 4': 0 };
     let totalGames = 0;
 
     let getWinners = dbInstance.getWinnersOrderedByGameTime().then(winnersList => {
@@ -65,8 +65,8 @@ databaseInstancePromise.then(dbInstance => {
             let winningPlayers = winningPlayersObject.winners;
             totalGames += 1;
 
-            players.forEach(player => {
-                if (winningPlayers.indexOf(player) > -1) {
+            players.forEach((player, playerIndex) => {
+                if (winningPlayers.indexOf(playerIndex + 1) > -1) {
                     winCount[player] += 1;
                 }
 
@@ -81,8 +81,10 @@ databaseInstancePromise.then(dbInstance => {
             let scores = scoresObject.score;
 
             scores.forEach((score, playerIndex) => {
-                let player = playerIndex + 1;
+                let player = players[playerIndex];
+
                 if (Array.isArray(score)) {
+                    // fix for hearts score bug
                     score = score[0];
                 }
                 scoresOverGames[player].push(score);

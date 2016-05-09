@@ -54,15 +54,24 @@ function requestMoveHandler(event, callback) {
   game = toGame(event);
 
   let mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
-  console.time('saveGameStateToDatabase');
   Dumper.saveGameStateToDatabase(mcts, event, movesCount, program.algorithm, searchOptions)
     .then(function() {
-      console.timeEnd('saveGameStateToDatabase');
-      console.time('selectMove');
-      let move = mcts.selectMove();
-      console.timeEnd('selectMove');
 
-      callback(null, mapCardInverse(move));
+      let move, hrStart, hrEnd, moveTime;
+
+      hrStart = process.hrtime();
+
+      if (game.getPossibleMoves().length === 1) {
+        console.log('Only one move possible, cancelling search');
+        move = game.getPossibleMoves()[0];
+      } else {
+        move = mcts.selectMove();
+      }
+      hrEnd = process.hrtime(hrStart);
+      moveTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
+      console.info("Execution time (hr): %d ms", moveTime);
+
+      callback(null, { computationTime: moveTime, move: mapCardInverse(move) });
     });
 }
 

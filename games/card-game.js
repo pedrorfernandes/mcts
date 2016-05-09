@@ -92,6 +92,21 @@ function selectRandomIndexFromArrayWithFilter(array, filterFn, rng) {
   return filtered[Math.floor(rng() * filtered.length)];
 }
 
+function printMatrix(matrix, hands, playerIndexes) {
+  let columnString;
+  let columnsLength = matrix.length;
+  let rowsLength = matrix[0].length;
+  let i, j;
+  for (j = 0; j < rowsLength; j++) {
+    columnString = '';
+    for (i = 0; i < columnsLength; i++) {
+      columnString += matrix[i][j] ? 1 : 0 + ' ';
+    }
+    console.log(columnString, hands[playerIndexes[j]].filter(isCardHidden).length);
+  }
+  console.log('');
+}
+
 class CardGame {
 
   constructor(options) {}
@@ -173,21 +188,29 @@ class CardGame {
 
     let assignmentMatrix = generateAssignmentMatrix(unknownCards, playerIndexes);
 
-    let cardPossibilitySums, minColumn, playerPossibilitySums, minRow,
+    let cardPossibilitySums, playerPossibilitySums, minRow,
       rowIndex, cell, pickedCardIndex, pickedPlayerIndex, restrictedColumnIndex;
+
+    let columnLength = assignmentMatrix[0].length;
+
+    cardPossibilitySums = sumColumns(assignmentMatrix);
 
     for (let i = 0; i < numberOfUnknownCards; i++) {
 
-      // find where [0, 0, 1] -> only one 1 and rest 0's
-      cardPossibilitySums = sumColumns(assignmentMatrix);
-      minColumn = _.min(cardPossibilitySums);
+      // printMatrix(assignmentMatrix, this.hands, playerIndexes);
 
-      restrictedColumnIndex = _.findIndex(cardPossibilitySums, sum => sum === 1);
+      if (_.every(cardPossibilitySums, sum => sum === columnLength)) {
+        // all restrictions were handled, switching back to random assign
+        return this._assignRandomCards(unknownCards, rng);
+      }
+
+      // find where [0, 0, 1] -> only one 1 and rest 0's
+      restrictedColumnIndex = cardPossibilitySums.indexOf(1);
       if (restrictedColumnIndex > -1) {
         cell = [restrictedColumnIndex, assignmentMatrix[restrictedColumnIndex].indexOf(true)];
       }
       else {
-        // else, keep trying with player with max restrictions
+        // else, keep trying with player with most restrictions
         playerPossibilitySums = sumRows(assignmentMatrix)
           .map((sum, index) => this._subtractPlayerCardsLeftToAssign(sum, playerIndexes[index]));
         minRow = _.min(playerPossibilitySums);
@@ -206,11 +229,12 @@ class CardGame {
       // card is now assigned, we don't need it in the matrix
       unknownCards.splice(pickedCardIndex, 1);
       assignmentMatrix.splice(pickedCardIndex, 1);
+      cardPossibilitySums.splice(pickedCardIndex, 1);
 
-      if (!hasUnknownCards(pickedPlayerIndex)) {
+      if (unknownCards.length && !hasUnknownCards(pickedPlayerIndex)) {
         // if player is fully assigned, 0 all his possibilities
-        // playerIndexes.splice(playerIndexes.indexOf(pickedPlayerIndex), 1);
         assignmentMatrix.forEach(column => column[cell[1]] = false);
+        cardPossibilitySums = sumColumns(assignmentMatrix);
       }
     }
 
