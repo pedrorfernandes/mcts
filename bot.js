@@ -54,25 +54,37 @@ function requestMoveHandler(event, callback) {
   game = toGame(event);
 
   let mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
-  Dumper.saveGameStateToDatabase(mcts, event, movesCount, program.algorithm, searchOptions)
-    .then(function() {
 
-      let move, hrStart, hrEnd, moveTime;
+  let stateData = {
+    mcts: mcts,
+    event: event,
+    stateNumber: movesCount,
+    searchAlgorithm: program.algorithm,
+    searchOptions: searchOptions,
+    computationTime: null
+  };
 
-      hrStart = process.hrtime();
+  Dumper.saveGameStateToDatabase(stateData).then(function() {
 
-      if (game.getPossibleMoves().length === 1) {
-        console.log('Only one move possible, cancelling search');
-        move = game.getPossibleMoves()[0];
-      } else {
-        move = mcts.selectMove();
-      }
-      hrEnd = process.hrtime(hrStart);
-      moveTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
-      console.info("Execution time (hr): %d ms", moveTime);
+    let move, hrStart, hrEnd;
 
-      callback(null, { computationTime: moveTime, move: mapCardInverse(move) });
-    });
+    hrStart = process.hrtime();
+
+    if (game.getPossibleMoves().length === 1) {
+      console.log('Only one move possible, cancelling search');
+      move = game.getPossibleMoves()[0];
+    } else {
+      move = mcts.selectMove();
+    }
+
+    hrEnd = process.hrtime(hrStart);
+
+    stateData.computationTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
+
+    callback(null, mapCardInverse(move));
+
+    Dumper.saveGameStateToDatabase(stateData);
+  });
 }
 
 function stateHandler(event, callback) {

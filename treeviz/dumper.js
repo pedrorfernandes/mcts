@@ -4,6 +4,7 @@ let fs = require('fs');
 let stringify = require('json-stringify-safe');
 let LZString = require('lz-string');
 let database = require('../utils/database');
+let _ = require('lodash');
 
 function replacer(key, value) {
   if (key === 'game' || key === 'mcts') {
@@ -59,21 +60,30 @@ let saveGameStateToFile = function(fileName, mcts) {
   console.log("The state dump was stored!");
 };
 
-let saveGameStateToDatabase = function(mcts, event, stateNumber, searchAlgorithm, searchOptions) {
+let saveGameStateToDatabase = function(stateData) {
+
+  let data = _.defaults(stateData, {
+    mcts: { player: null, game: null, rng: null },
+    event: { gameId: null },
+    stateNumber: null,
+    searchAlgorithm: null,
+    searchOptions: null,
+    computationTime: null
+  });
 
   let stateJson = {
-    id: event.gameId + '_' + stateNumber,
-    searchAlgorithm: searchAlgorithm,
-    searchOptions: searchOptions,
-    stateNumber: stateNumber,
     date: (new Date()).toString(),
     timestamp: Date.now(),
-    gameId: event.gameId,
-    game: mcts.game,
-    gameType: mcts.game.constructor.name.toLowerCase(),
-    rng: mcts.rng ? mcts.rng.state() : null,
-    player: mcts.player,
-    iterations: mcts.iterations
+    id: data.event.gameId + '_' + data.stateNumber,
+    searchAlgorithm: data.searchAlgorithm,
+    searchOptions: data.searchOptions,
+    stateNumber: data.stateNumber,
+    gameId: data.event.gameId,
+    game: data.mcts.game,
+    gameType: data.mcts.game ? data.mcts.game.constructor.name.toLowerCase() : null,
+    rng: data.mcts.rng ? data.mcts.rng.state() : null,
+    player: data.mcts.player,
+    computationTime: data.computationTime
   };
 
   return database.gameStates.save(stateJson);
