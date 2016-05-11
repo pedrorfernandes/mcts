@@ -57,16 +57,16 @@ function requestMoveHandler(event, callback) {
 
   let mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
 
-  let stateData = {
+  let stateJson = Dumper.createStateJson({
     mcts: mcts,
     event: event,
     stateNumber: movesCount,
     searchAlgorithm: program.algorithm,
     searchOptions: searchOptions,
     computationTime: null
-  };
+  });
 
-  Dumper.saveGameStateToDatabase(stateData).then(function() {
+  Dumper.saveStateJSONToDatabase(stateJson).then(function() {
 
     let move, hrStart, hrEnd;
 
@@ -81,12 +81,12 @@ function requestMoveHandler(event, callback) {
 
     hrEnd = process.hrtime(hrStart);
 
-    stateData.computationTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
-    stateData.move = move;
+    stateJson.computationTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
+    stateJson.move = move;
 
     callback(null, mapCardInverse(move));
 
-    Dumper.saveGameStateToDatabase(stateData);
+    Dumper.saveStateJSONToDatabase(stateJson);
   });
 }
 

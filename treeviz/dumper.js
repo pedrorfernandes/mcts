@@ -61,7 +61,10 @@ let saveGameStateToFile = function(fileName, mcts) {
 };
 
 let saveGameStateToDatabase = function(stateData) {
+  return saveStateJSONToDatabase(createStateJson(stateData));
+};
 
+let createStateJson = function(stateData) {
   let data = _.defaults(stateData, {
     mcts: { player: null, game: null, rng: null },
     event: { gameId: null },
@@ -72,7 +75,7 @@ let saveGameStateToDatabase = function(stateData) {
     move: null
   });
 
-  let stateJson = {
+  return {
     date: (new Date()).toString(),
     timestamp: Date.now(),
     id: data.event.gameId + '_' + data.stateNumber,
@@ -80,14 +83,16 @@ let saveGameStateToDatabase = function(stateData) {
     searchOptions: data.searchOptions,
     stateNumber: data.stateNumber,
     gameId: data.event.gameId,
-    game: data.mcts.game,
+    game: new data.mcts.game.constructor(data.mcts.game),
     gameType: data.mcts.game ? data.mcts.game.constructor.name.toLowerCase() : null,
-    rng: data.mcts.rng ? data.mcts.rng.state() : null,
+    rng: data.mcts.rng ? _.cloneDeep(data.mcts.rng.state()) : null,
     player: data.mcts.player,
     computationTime: data.computationTime,
     move: data.move
   };
+};
 
+let saveStateJSONToDatabase = function(stateJson) {
   return database.gameStates.save(stateJson);
 };
 
@@ -97,6 +102,9 @@ let saveGameStateAndTreeToFiles = function(fileName, mcts) {
 };
 
 module.exports = {
+  createStateJson: createStateJson,
+  saveStateJSONToDatabase: saveStateJSONToDatabase,
+  
   saveGameTreeToFile: saveGameTreeToFile,
   saveGameStateToDatabase: saveGameStateToDatabase,
   saveGameStateToFile: saveGameStateToFile,
