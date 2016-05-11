@@ -3,6 +3,7 @@
 'use strict';
 
 let _ = require('lodash');
+let nodeReward = require('./node-reward');
 
 function isExpanded(node) {
   return node !== null;
@@ -51,18 +52,7 @@ class Node {
   }
 
   getReward(game, player, initialNode) {
-    let winners = game.getWinners();
-    let isWinner = _.includes(winners, player);
-    
-    if (game.isTie() && isWinner) {
-      return 0.5;
-    }
-
-    if (isWinner) {
-      return 1;
-    }
-    
-    return 0;
+    throw new Error('The search algorithm must override Node.getReward!');
   };
 
   backPropagate(finishedGame) {

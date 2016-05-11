@@ -37,6 +37,19 @@
     }
   },
 
+  "enhancements": {
+
+    "reward": {
+      "module": "./search/node-reward",
+      "functions": {
+        "positive-win-or-loss": "getPositiveWinOrLoss",
+        "scores-difference": "getScoresDifference",
+        "win-or-loss": "getWinOrLoss"
+      }
+    }
+
+  },
+
   "couchbase": {
     "enabled": true,
     "cluster": "http://localhost:8091/",

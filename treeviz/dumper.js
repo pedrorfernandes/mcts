@@ -68,7 +68,8 @@ let saveGameStateToDatabase = function(stateData) {
     stateNumber: null,
     searchAlgorithm: null,
     searchOptions: null,
-    computationTime: null
+    computationTime: null,
+    move: null
   });
 
   let stateJson = {
@@ -83,7 +84,8 @@ let saveGameStateToDatabase = function(stateData) {
     gameType: data.mcts.game ? data.mcts.game.constructor.name.toLowerCase() : null,
     rng: data.mcts.rng ? data.mcts.rng.state() : null,
     player: data.mcts.player,
-    computationTime: data.computationTime
+    computationTime: data.computationTime,
+    move: data.move
   };
 
   return database.gameStates.save(stateJson);

@@ -2,11 +2,12 @@
 /*jslint indent: 2 */
 'use strict';
 
-var _ = require('lodash');
-var randomGenerator = require('seedrandom');
-var shuffle = require('./../utils/shuffle').shuffle;
-var sample = require('./../utils/shuffle').sample;
-var Node = require('./node').Node;
+let _ = require('lodash');
+let randomGenerator = require('seedrandom');
+let shuffle = require('./../utils/shuffle').shuffle;
+let sample = require('./../utils/shuffle').sample;
+let Node = require('./node').Node;
+let nodeReward = require('./node-reward');
 
 class DeterminizedUCTNode extends Node {
 
@@ -15,16 +16,16 @@ class DeterminizedUCTNode extends Node {
   };
 
   expand() {
-    var children = this.getChildNodes();
+    let children = this.getChildNodes();
 
-    var possibleMovesIndexArray = this.possibleMoves.map((value, index) => index);
+    let possibleMovesIndexArray = this.possibleMoves.map((value, index) => index);
 
-    var moveIndex = sample(
+    let moveIndex = sample(
       possibleMovesIndexArray.filter(index => isNotExpanded(children[index])),
       this.mcts.rng
     );
 
-    var expanded = new DeterminizedUCTNode({
+    let expanded = new DeterminizedUCTNode({
       game: this.game,
       parent: this,
       move: this.possibleMoves[moveIndex],
@@ -38,7 +39,7 @@ class DeterminizedUCTNode extends Node {
   };
 
   bestChild(explorationValue) {
-    var shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
+    let shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
     return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
   };
 }
@@ -71,13 +72,13 @@ function simulate(node) {
   return clonedGame;
 }
 
-var nodeValue = function(explorationValue, node) {
+let nodeValue = function(explorationValue, node) {
   return getUCB1(explorationValue, node);
 };
 
-var EXPLORATION_VALUE = Math.sqrt(2);
-var NO_EXPLORATION = 0;
-var getUCB1 = function (explorationValue, node) {
+let EXPLORATION_VALUE = Math.sqrt(2);
+let NO_EXPLORATION = 0;
+let getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
     return (node.wins / node.visits)
       + explorationValue * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
@@ -92,11 +93,11 @@ function DeterminizedUCT(game, player, configs) {
   this.iterations = configs.iterations || 100;
   this.determinizations = configs.determinizations || 100;
   this.player = typeof player == 'undefined' ? 0 : player;
-  if (configs.rng) {
-    this.rng = configs.rng;
-  } else {
-    this.rng = randomGenerator(null, { state: true });
-  }
+
+  this.rng = configs.rng ? configs.rng: randomGenerator(null, { state: true });
+
+  let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
+  Node.prototype.getReward = nodeReward[rewardFnName];
 }
 
 DeterminizedUCT.prototype.selectMove = function () {

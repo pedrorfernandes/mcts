@@ -16,12 +16,14 @@ program
   .option('-o, --search-options [search-options]', 'Options JSON to pass down to algorithm', str => JSON.parse(str), { iterations: 10000 })
   .option('-c, --competition [competition]', 'Competition name to join in botwars server', 'Random Vs ISMCTS Sueca')
   .option('-h, --hostname [hostname]', 'Botwars server url', 'localhost:3000')
+  .option('-e, --enhancements [enhancements]', 'Options JSON specifying which enhancements to apply in a algorithm', str => JSON.parse(str), { reward: 'positive-win-or-loss' })
   .parse(process.argv);
 
 let host = program.hostname;
 let Game = require(config.games[program.game].module);
 let gameName = program.game;
 let searchOptions = program.searchOptions;
+searchOptions.enhancements = program.enhancements;
 let SearchAlgorithm = require(config.algorithms[program.algorithm].module);
 let playerNumber = program.player;
 let competitionName = program.competition;
@@ -80,6 +82,7 @@ function requestMoveHandler(event, callback) {
     hrEnd = process.hrtime(hrStart);
 
     stateData.computationTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
+    stateData.move = move;
 
     callback(null, mapCardInverse(move));
 

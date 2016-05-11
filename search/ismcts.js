@@ -1,28 +1,29 @@
 'use strict';
 
-var _ = require('lodash');
-var randomGenerator = require('seedrandom');
-var shuffle = require('./../utils/shuffle').shuffle;
-var sample = require('./../utils/shuffle').sample;
-var Node = require('./node').Node;
+let _ = require('lodash');
+let randomGenerator = require('seedrandom');
+let shuffle = require('./../utils/shuffle').shuffle;
+let sample = require('./../utils/shuffle').sample;
+let Node = require('./node').Node;
+let nodeReward = require('./node-reward');
 
 class ISMCTSNode extends Node {
   expand(deterministicGame) {
-    var children = this.getChildNodes();
-    var untriedMoves = this.getUntriedMoves(deterministicGame);
+    let children = this.getChildNodes();
+    let untriedMoves = this.getUntriedMoves(deterministicGame);
 
     if (untriedMoves.length === 0) {
       return this;
     }
 
-    var move = sample(untriedMoves, this.mcts.rng);
-    var moveIndex = this.possibleMoves.indexOf(move);
+    let move = sample(untriedMoves, this.mcts.rng);
+    let moveIndex = this.possibleMoves.indexOf(move);
 
     if(moveIndex === -1) {
       throw new Error('Get Possible Moves and Randomize game are not coherent')
     }
 
-    var expanded = new ISMCTSNode({
+    let expanded = new ISMCTSNode({
       game: this.game,
       player: deterministicGame.nextPlayer,
       parent: this,
@@ -39,15 +40,15 @@ class ISMCTSNode extends Node {
   }
 
   bestChild(explorationValue, deterministicGame) {
-    var legalMoves = deterministicGame.getPossibleMoves();
-    var legalChildren = this.getChildNodes().filter(function(node) {
+    let legalMoves = deterministicGame.getPossibleMoves();
+    let legalChildren = this.getChildNodes().filter(function(node) {
       return node && legalMoves.indexOf(node.move) > -1;
     });
 
     // easier to update availability here instead of backprop
     legalChildren.forEach(node => node.avails += 1);
 
-    var shuffled = shuffle(legalChildren, this.mcts.rng);
+    let shuffled = shuffle(legalChildren, this.mcts.rng);
     return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
   }
 
@@ -75,13 +76,13 @@ ISMCTS.prototype.simulate = function(deterministicGame) {
   return deterministicGame;
 };
 
-var nodeValue = function(explorationValue, node) {
+let nodeValue = function(explorationValue, node) {
   return getUCB1(explorationValue, node);
 };
 
-var EXPLORATION_VALUE = 2 * Math.sqrt(2) / 2;
-var NO_EXPLORATION = 0;
-var getUCB1 = function (explorationValue, node) {
+let EXPLORATION_VALUE = 2 * Math.sqrt(2) / 2;
+let NO_EXPLORATION = 0;
+let getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
     return (node.wins / node.visits)
       + explorationValue * Math.sqrt(Math.log(node.avails) / node.visits);
@@ -95,11 +96,10 @@ function ISMCTS(game, player, configs)  {
   this.game = game;
   this.iterations = configs.iterations || 1000;
   this.player = typeof player == 'undefined' ? 0 : player;
-  if (configs.rng) {
-    this.rng = configs.rng;
-  } else {
-    this.rng = randomGenerator(null, { state: true });
-  }
+  this.rng = configs.rng ? configs.rng: randomGenerator(null, { state: true });
+
+  let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
+  Node.prototype.getReward = nodeReward[rewardFnName];
 }
 
 ISMCTS.prototype.selectMove = function () {
@@ -110,12 +110,12 @@ ISMCTS.prototype.selectMove = function () {
     mcts: this
   });
 
-  for(var i = 0; i < this.iterations; i ++) {
-    var node = this.rootNode;
-    var deterministicGame = node.determinize();
+  for(let i = 0; i < this.iterations; i ++) {
+    let node = this.rootNode;
+    let deterministicGame = node.determinize();
     node = select(node, deterministicGame);
     node = node.expand(deterministicGame);
-    var finishedGame = this.simulate(deterministicGame);
+    let finishedGame = this.simulate(deterministicGame);
     node.backPropagate(finishedGame);
   }
 
