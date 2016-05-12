@@ -57,9 +57,9 @@ class ISMCTSNode extends Node {
   }
 }
 
-function select(node, deterministicGame) {
+function select(node, deterministicGame, explorationConstant) {
   while(!node.isTerminal() && _.isEmpty(node.getUntriedMoves(deterministicGame)) ) {
-    node = node.bestChild(EXPLORATION_VALUE, deterministicGame);
+    node = node.bestChild(explorationConstant, deterministicGame);
     deterministicGame.performMove(node.move);
   }
   return node;
@@ -80,14 +80,11 @@ let nodeValue = function(explorationValue, node) {
   return getUCB1(explorationValue, node);
 };
 
-let EXPLORATION_VALUE = 2 * Math.sqrt(2) / 2;
 let NO_EXPLORATION = 0;
 let getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
-    return (node.wins / node.visits)
-      + explorationValue * Math.sqrt(Math.log(node.avails) / node.visits);
-  }
-  else {
+    return (node.wins / node.visits) + explorationValue * Math.sqrt(Math.log(node.avails) / node.visits);
+  } else {
     return (node.wins / node.visits);
   }
 };
@@ -98,6 +95,7 @@ function ISMCTS(game, player, configs)  {
   this.player = typeof player == 'undefined' ? 0 : player;
   this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
 
+  this.explorationConstant = configs.explorationConstant ? configs.explorationConstant : (Math.sqrt(2) / 2);
   let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
   Node.prototype.getReward = nodeReward[rewardFnName];
 }
@@ -113,7 +111,7 @@ ISMCTS.prototype.selectMove = function () {
   for(let i = 0; i < this.iterations; i ++) {
     let node = this.rootNode;
     let deterministicGame = node.determinize();
-    node = select(node, deterministicGame);
+    node = select(node, deterministicGame, this.explorationConstant);
     node = node.expand(deterministicGame);
     let finishedGame = this.simulate(deterministicGame);
     node.backPropagate(finishedGame);

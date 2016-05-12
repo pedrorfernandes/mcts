@@ -48,13 +48,13 @@ function isNotExpanded(node) {
   return node === null;
 }
 
-function treePolicy(node) {
+function select(node, explorationConstant) {
   while(!node.isTerminal()) {
     if (node.isExpandable()) {
       return node.expand();
     }
     else {
-      node = node.bestChild(EXPLORATION_VALUE);
+      node = node.bestChild(explorationConstant);
     }
   }
   return node;
@@ -76,14 +76,11 @@ let nodeValue = function(explorationValue, node) {
   return getUCB1(explorationValue, node);
 };
 
-let EXPLORATION_VALUE = Math.sqrt(2);
 let NO_EXPLORATION = 0;
 let getUCB1 = function (explorationValue, node) {
   if (explorationValue !== 0) {
-    return (node.wins / node.visits)
-      + explorationValue * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
-  }
-  else {
+    return (node.wins / node.visits) + explorationValue * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
+  } else {
     return (node.wins / node.visits);
   }
 };
@@ -96,6 +93,7 @@ function DeterminizedUCT(game, player, configs) {
 
   this.rng = configs.rng ? configs.rng: randomGenerator(null, { state: true });
 
+  this.explorationConstant = configs.explorationConstant ? configs.explorationConstant : (Math.sqrt(2) / 2);
   let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
   Node.prototype.getReward = nodeReward[rewardFnName];
 }
@@ -115,7 +113,7 @@ DeterminizedUCT.prototype.selectMove = function () {
     });
 
     for (let i = 0; i < this.iterations; i++) {
-      let selectedNode = treePolicy(rootNode);
+      let selectedNode = select(rootNode, this.explorationConstant);
       let endGame = simulate(selectedNode);
       selectedNode.backPropagate(endGame);
     }
