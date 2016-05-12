@@ -257,6 +257,10 @@ class CardGame {
   randomize(rng) {
     let unknownCards = this.getUnknownCards();
 
+    if (unknownCards.length === 0) {
+      return this;
+    }
+
     if (this._hasRestrictions()) {
       return this._assignRandomCards(unknownCards, rng);
     }
