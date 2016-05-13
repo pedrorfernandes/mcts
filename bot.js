@@ -7,16 +7,19 @@ let Dumper = require('./treeviz/dumper');
 let fs = require('fs');
 const config = JSON.parse(fs.readFileSync("config.json"));
 
+let defaultSearchOptions = { iterations: 10000, explorationConstant: (Math.sqrt(2) / 2) };
+let defaultEnhancements =  { reward: 'positive-win-or-loss' };
+
 let program = require('commander');
 program
   .version('0.0.1')
   .option('-p, --player [player]', 'Playernumber in game', str => parseInt(str), 2)
   .option('-a, --algorithm [algorithm]', 'Algorithm to use, check names in config file', 'ismcts')
   .option('-g, --game [game]', 'Game to play, check names in config file', 'sueca')
-  .option('-o, --search-options [search-options]', 'Options JSON to pass down to algorithm', str => JSON.parse(str), { iterations: 10000 })
+  .option('-o, --search-options [search-options]', 'Options JSON to pass down to algorithm', str => JSON.parse(str), defaultSearchOptions)
   .option('-c, --competition [competition]', 'Competition name to join in botwars server', 'Random Vs ISMCTS Sueca')
   .option('-h, --hostname [hostname]', 'Botwars server url', 'localhost:3000')
-  .option('-e, --enhancements [enhancements]', 'Options JSON specifying which enhancements to apply in a algorithm', str => JSON.parse(str), { reward: 'positive-win-or-loss' })
+  .option('-e, --enhancements [enhancements]', 'Options JSON specifying which enhancements to apply in a algorithm', str => JSON.parse(str), defaultEnhancements)
   .parse(process.argv);
 
 let host = program.hostname;

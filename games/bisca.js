@@ -83,6 +83,23 @@ function isGame(object) {
   return object && object.hands && object.trick;
 }
 
+let gameValues = [-4, -2, -1, 0, 1, 2, 4];
+let gameValueRanges = [[0], [1, 29], [30, 59], [60], [61, 90], [91, 119], [120]];
+
+function getGameValue(score) {
+
+  let gameValueIndex = _.findIndex(gameValueRanges, range => {
+    if (range.length === 1) {
+      return score === range[0];
+    }
+    return score >= range[0] && score <= range[1];
+  });
+
+  return gameValues[gameValueIndex];
+}
+
+let getCachedGameValue = _.memoize(getGameValue);
+
 let storeScores = false;
 
 class Bisca extends CardGame {
@@ -348,6 +365,11 @@ class Bisca extends CardGame {
 
   _getTeamScores() {
     return this._getTeams().map(this.getScore, this);
+  }
+
+  getWonGames(player) {
+    let score = this.getScore([player]);
+    return getCachedGameValue(score);
   }
 
   getWinners() {

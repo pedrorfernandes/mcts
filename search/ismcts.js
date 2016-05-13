@@ -95,7 +95,7 @@ function ISMCTS(game, player, configs)  {
   this.player = typeof player == 'undefined' ? 0 : player;
   this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
 
-  this.explorationConstant = configs.explorationConstant ? configs.explorationConstant : (Math.sqrt(2) / 2);
+  this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
   let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
   Node.prototype.getReward = nodeReward[rewardFnName];
 }

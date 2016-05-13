@@ -79,6 +79,23 @@ let numberOfPlayers = 4;
 
 let storeScores = false;
 
+let gameValues = [-4, -2, -1, 0, 1, 2, 4];
+let gameValueRanges = [[0], [1, 29], [30, 59], [60], [61, 90], [91, 119], [120]];
+
+function getGameValue(score) {
+
+  let gameValueIndex = _.findIndex(gameValueRanges, range => {
+    if (range.length === 1) {
+      return score === range[0];
+    }
+    return score >= range[0] && score <= range[1];
+  });
+
+  return gameValues[gameValueIndex];
+}
+
+let getCachedGameValue = _.memoize(getGameValue);
+
 class Sueca extends CardGame {
   constructor(options) {
     super(options);
@@ -293,6 +310,11 @@ class Sueca extends CardGame {
     }, []);
 
     return _.sumBy(teamWonCards, card => getValue(card));
+  }
+
+  getWonGames(player) {
+    let score = this.getScore([player]);
+    return getCachedGameValue(score);
   }
 
   _getTeams() {

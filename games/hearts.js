@@ -81,6 +81,25 @@ function isGame(object) {
   return object && object.hands && object.trick;
 }
 
+let gameValues = [-4, -2, -1, 0, 1, 2, 4];
+let gameValueRanges = [[-26], [-25, -19], [-18, -13], [-13], [-12, -7], [-6, -1], [0]];
+
+function getGameValue(playerScore, winningScore) {
+
+  let score = winningScore - playerScore;
+
+  let gameValueIndex = _.findIndex(gameValueRanges, range => {
+    if (range.length === 1) {
+      return score === range[0];
+    }
+    return score >= range[0] && score <= range[1];
+  });
+
+  return gameValues[gameValueIndex];
+}
+
+let getCachedGameValue = _.memoize(getGameValue);
+
 let storeScores = false;
 
 class Hearts extends CardGame {
@@ -317,22 +336,24 @@ class Hearts extends CardGame {
   }
 
   getScore(players) {
+    if(players.length !== 1) {
+      throw new Error('Shouldn\'t return score for two players combined!');
+    }
+
+    let player = players[0];
+
     if (this.round === 14) {
       let playerThatShotTheMoon = this._getPlayerThatShotTheMoon();
 
       if (playerThatShotTheMoon) {
-        return players.reduce((score, player) => {
-          player !== playerThatShotTheMoon ? score += 26 : score
-        }, 0);
+        return player === playerThatShotTheMoon ? 0 : 26;
       }
     }
 
-    let wonCards = players.reduce((cards, player) => {
-      let playerIndex = toPlayerIndex(player);
-      return cards.concat(this.wonCards[playerIndex]);
-    }, []);
+    let playerIndex = toPlayerIndex(player);
+    let playerWonCards = this.wonCards[playerIndex];
 
-    return _.sumBy(wonCards, card => getValue(card));
+    return _.sumBy(playerWonCards, card => getValue(card));
   }
 
   _getPlayers() {
@@ -350,6 +371,13 @@ class Hearts extends CardGame {
     let minScore = _.min(playerScores);
 
     return players.filter((player, playerIndex) => playerScores[playerIndex] === minScore);
+  }
+
+  getWonGames(player) {
+    let score = this.getScore([player]);
+
+    let winningScore = this.getScore([this.getWinners()[0]]);
+    return getCachedGameValue(score, winningScore);
   }
 
   getWinners() {

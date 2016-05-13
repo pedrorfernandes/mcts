@@ -33,8 +33,7 @@ function getWinOrLoss(game, player, initialNode) {
 }
 
 function getScoresDifference(game, player, initialNode) {
-  throw new Error('not implemented yet!');
-  // return game.getScoreDifference(initialNode.game, player);
+  return game.getWonGames(player);
 }
 
 module.exports = {
