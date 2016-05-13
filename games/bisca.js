@@ -395,7 +395,7 @@ class Bisca extends CardGame {
   randomize(rng) {
     super.randomize(rng);
 
-    let shuffledUnknownCards = shuffle(this.getUnknownCards());
+    let shuffledUnknownCards = shuffle(this.getUnknownCards(), rng);
 
     this.deck = this.deck.map(card => {
       if (isCardVisible(card)) {
