@@ -7,9 +7,28 @@
 </head>
 <body>
 
+<h1>{{title}}</h1>
+
+<h2>Sueca</h2>
+<h3>Cumulative Win Rate</h3>
 <div id="chart1"></div>
 
+<h3>Sorted Scored Points Distribution</h3>
 <div id="chart2"></div>
+
+<h2>Bisca</h2>
+<h3>Cumulative Win Rate</h3>
+<div id="chart3"></div>
+
+<h3>Sorted Scored Points Distribution</h3>
+<div id="chart4"></div>
+
+<h2>Hearts</h2>
+<h3>Cumulative Win Rate</h3>
+<div id="chart5"></div>
+
+<h3>Sorted Scored Points Distribution</h3>
+<div id="chart6"></div>
 
 </body>
 
@@ -17,122 +36,130 @@
 <script src="vendor/c3/c3.min.js"></script>
 
 <script>
-    function toDataColumns(dataObject) {
-        return Object.keys(dataObject).map(function (playerKey) {
-            return [playerKey].concat(dataObject[playerKey]);
+    var winRateColumns = {{winRateOverGames}}
+
+    var scoresColumns = {{scoresOverGames}}
+
+    function generateCumulativeScoreChart(chartId, gameName) {
+        return c3.generate({
+            bindto: chartId,
+            type: 'spline',
+            data: {
+                columns: winRateColumns[gameName]
+            },
+            point: {
+                show: false
+            },
+            zoom: {
+                enabled: true
+            },
+            grid: {
+                x: {
+                    show: true
+                },
+                y: {
+                    show: true
+                }
+            },
+            axis: {
+                x: {
+                    label: {
+                        text: 'Game Count',
+                        position: 'outer-left'
+                    },
+                    tick: {
+                        count: 100,
+                        format: function (number) {
+                            return (number + 1).toFixed(0);
+                        }
+                    }
+                },
+                y: {
+                    label: {
+                        text: 'Cumulative Win Rate',
+                        position: 'outer-bottom'
+                    },
+                    tick: {
+                        format: function (number) {
+                            return number + ' %';
+                        }
+                    },
+                    padding: {
+                        top: 0,
+                        bottom: 0
+                    }
+                }
+            }
         });
     }
 
-    var winRateOverGames = {{winRateOverGames}}
-
-    var winRateColumns = toDataColumns(winRateOverGames);
-
-    var chart1 = c3.generate({
-        bindto: '#chart1',
-        type: 'spline',
-        data: {
-            columns: winRateColumns
-        },
-        point: {
-            show: false
-        },
-        zoom: {
-            enabled: true
-        },
-        grid: {
-            x: {
-                show: true
-            },
-            y: {
-                show: true
-            }
-        },
-        axis: {
-            x: {
-                label: {
-                    text: 'Game Count',
-                    position: 'outer-left'
+    function generateScoreChart(chartId, gameName) {
+        return c3.generate({
+            bindto: chartId,
+            data: {
+                columns: scoresColumns[gameName],
+                types: {
+                    '1': 'line',
+                    '2': 'line',
+                    '3': 'line',
+                    '4': 'line'
                 },
-                tick: {
-                    count: 100,
-                    format: function (number) {
-                        return (number + 1).toFixed(0);
-                    }
+                // groups: [['1', '2', '3', '4']]
+            },
+            point: {
+                show: false
+            },
+            zoom: {
+                enabled: true
+            },
+            grid: {
+                x: {
+                    show: true
+                },
+                y: {
+                    show: true
                 }
             },
-            y: {
-                label: {
-                    text: 'Cumulative Win Rate',
-                    position: 'outer-bottom'
-                },
-                tick: {
-                    format: function (number) {
-                        return number + ' %';
+            axis: {
+                x: {
+                    label: {
+                        text: 'Game Count',
+                        position: 'outer-left'
+                    },
+                    tick: {
+                        count: 100,
+                        format: function (number) {
+                            return (number + 1).toFixed(0);
+                        }
                     }
                 },
-                padding: {
-                    top: 0,
-                    bottom: 0
-                }
-            }
-        }
-    });
-
-    var scoresOverGames = {{scoresOverGames}}
-
-    var scoresColumns = toDataColumns(scoresOverGames);
-
-    var chart2 = c3.generate({
-        bindto: '#chart2',
-        data: {
-            columns: scoresColumns,
-            types: {
-                '1': 'line',
-                '2': 'line',
-                '3': 'line',
-                '4': 'line'
-            },
-            // groups: [['1', '2', '3', '4']]
-        },
-        point: {
-            show: false
-        },
-        zoom: {
-            enabled: true
-        },
-        grid: {
-            x: {
-                show: true
-            },
-            y: {
-                show: true
-            }
-        },
-        axis: {
-            x: {
-                label: {
-                    text: 'Game Count',
-                    position: 'outer-left'
-                },
-                tick: {
-                    count: 100,
-                    format: function (number) {
-                        return (number + 1).toFixed(0);
+                y: {
+                    label: {
+                        text: 'Points Scored',
+                        position: 'outer-bottom'
+                    },
+                    padding: {
+                        top: 0,
+                        bottom: 0
                     }
                 }
-            },
-            y: {
-                label: {
-                    text: 'Points Scored',
-                    position: 'outer-bottom'
-                },
-                padding: {
-                    top: 0,
-                    bottom: 0
-                }
             }
-        }
-    });
+        });
+    }
+
+    var chartsToGenerate = [
+        { chartId: '#chart1', gameName: 'Sueca',  generateFn: generateCumulativeScoreChart },
+        { chartId: '#chart2', gameName: 'Sueca',  generateFn: generateScoreChart },
+        { chartId: '#chart3', gameName: 'Bisca',  generateFn: generateCumulativeScoreChart },
+        { chartId: '#chart4', gameName: 'Bisca',  generateFn: generateScoreChart },
+        { chartId: '#chart5', gameName: 'Hearts', generateFn: generateCumulativeScoreChart },
+        { chartId: '#chart6', gameName: 'Hearts', generateFn: generateScoreChart },
+    ];
+
+    for(var i = 0; i < chartsToGenerate.length; i++) {
+        var options = chartsToGenerate[i];
+        options.generateFn(options.chartId, options.gameName);
+    }
 
 </script>
 
