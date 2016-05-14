@@ -66,8 +66,8 @@ function copyHands(hand) {
 }
 
 let teamsPerNumberOfPlayers = {
-  2: [[0], [1]],
-  4: [[0,2], [1,3]]
+  2: [[1], [2]],
+  4: [[1,3], [2,4]]
 };
 
 let cardNumbersPerPlayerNumbers = {
@@ -357,8 +357,10 @@ class Bisca extends CardGame {
   }
 
   getScore(players) {
-    let teamWonCards = players.reduce(
-      (cards, player) => cards.concat(this.wonCards[player]), []);
+    let teamWonCards = players.reduce((cards, player) => {
+      let playerIndex = toPlayerIndex(player);
+      return cards.concat(this.wonCards[playerIndex])
+    }, []);
 
     return _.sumBy(teamWonCards, card => getValue(card));
   }
@@ -384,7 +386,7 @@ class Bisca extends CardGame {
 
     let winningTeam = teams.filter((team, teamIndex) => teamScores[teamIndex] === maxScore);
 
-    return _.flatten(winningTeam).map(toPlayer);
+    return _.flatten(winningTeam);
   }
 
   getAllPossibilities() {

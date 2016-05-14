@@ -437,8 +437,7 @@ class Sueca extends CardGame {
       pointsDifferenceForNextPlayer = pointsTeam2 - pointsTeam1;
     }
 
-    let nextPlayerIndex = toPlayerIndex(this.nextPlayer);
-    let pointsInHand = this.getScore([nextPlayerIndex]);
+    let pointsInHand = this.getScore([this.nextPlayer]);
 
     let winningBonus = 0;
     let winner = this._getWinners();
