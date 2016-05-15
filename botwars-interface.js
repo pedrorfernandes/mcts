@@ -92,7 +92,7 @@ function playBotWars(options) {
     });
   }
 
-  function enterCompetition(competition) {
+  function enterCompetition(competition, nextActionFn) {
     let gameId = getId(competition);
     request.post(getRegisterUri(gameId), function(err, res, body) {
       if (err) {
@@ -104,7 +104,14 @@ function playBotWars(options) {
 
       function searchCompetitionGames () {
         request.get(getCompetitionGamesUri(competition), function(err, res, body) {
-          let games = JSON.parse(body);
+          let parsed = JSON.parse(body);
+          let gamesToPlayCount = parsed.gamesToPlayCount;
+          let games = parsed.games;
+
+          if (gamesToPlayCount === 0) {
+            nextActionFn();
+          }
+
           if (games.length === 0) {
             setTimeout(searchCompetitionGames, 2000);
             return;
@@ -150,6 +157,10 @@ function playBotWars(options) {
     });
   }
 
+  function terminateProcess() {
+    process.exit(0);
+  }
+
   function findCompetition() {
     request.get(gamesUri, function(err, res, body) {
       if (err) {
@@ -163,7 +174,7 @@ function playBotWars(options) {
         competition = competitions[i];
 
         if(competition.status == 'not_started' && isNameToFind(competition)) {
-          enterCompetition(competition, noop);
+          enterCompetition(competition, terminateProcess);
           return;
         }
       }

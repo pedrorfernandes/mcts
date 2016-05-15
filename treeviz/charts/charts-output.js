@@ -149,8 +149,15 @@ databaseInstancePromise.then(dbInstance => {
     Promise.all([getWinners, getScores]).then(function () {
         function toDataColumns(dataObject) {
             return Object.keys(dataObject).map(function (playerKey) {
-                return [playerKey].concat(dataObject[playerKey]);
+                return [playerKey].concat(dataObject[playerKey].map(n => n.toFixed(3)));
             });
+        }
+
+        function toAverage(dataObject) {
+            return _.mapValues(dataObject, playerScores => _.mapValues(playerScores, scores => {
+                var sum = scores.reduce((a, b) => a + b, 0);
+                return sum / scores.length;
+            }));
         }
 
         function decorateBotNames(playerScores, playerName) {
@@ -164,15 +171,16 @@ databaseInstancePromise.then(dbInstance => {
         cumulativeWinRate = decorateBotNamesInGame(cumulativeWinRate);
         sortedScoresDistribution = decorateBotNamesInGame(sortedScoresDistribution);
 
-        let cumulativeWinRateColumns = _.mapValues(cumulativeWinRate,
-          playerWinRates => toDataColumns(playerWinRates));
-        let sortedScoresDistributionColumns = _.mapValues(sortedScoresDistribution,
-          playerScores => toDataColumns(playerScores));
+        let cumulativeWinRateColumns = _.mapValues(cumulativeWinRate, toDataColumns);
+        let sortedScoresDistributionColumns = _.mapValues(sortedScoresDistribution, toDataColumns);
+
+        let scoreAverages = toAverage(sortedScoresDistribution);
 
         let template = fs.readFileSync(__dirname + '/victory-charts.mustache.html', 'utf8');
         let output = Mustache.render(template, {
             winRateOverGames: JSON.stringify(cumulativeWinRateColumns),
             scoresOverGames: JSON.stringify(sortedScoresDistributionColumns),
+            scoreAverages: JSON.stringify(scoreAverages),
             title: title
         }).replace(/&quot;/g, '\'');
 

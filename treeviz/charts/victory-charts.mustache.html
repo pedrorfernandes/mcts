@@ -14,6 +14,7 @@
 <div id="chart1"></div>
 
 <h3>Sorted Scored Points Distribution</h3>
+<div id="chart2-averages"></div>
 <div id="chart2"></div>
 
 <h2>Bisca</h2>
@@ -21,6 +22,7 @@
 <div id="chart3"></div>
 
 <h3>Sorted Scored Points Distribution</h3>
+<div id="chart4-averages"></div>
 <div id="chart4"></div>
 
 <h2>Hearts</h2>
@@ -28,6 +30,7 @@
 <div id="chart5"></div>
 
 <h3>Sorted Scored Points Distribution</h3>
+<div id="chart6-averages"></div>
 <div id="chart6"></div>
 
 </body>
@@ -36,9 +39,11 @@
 <script src="vendor/c3/c3.min.js"></script>
 
 <script>
-    var winRateColumns = {{winRateOverGames}}
+    var winRateColumns = {{winRateOverGames}};
 
-    var scoresColumns = {{scoresOverGames}}
+    var scoresColumns = {{scoresOverGames}};
+
+    var scoreAverageColumns = {{scoreAverages}};
 
     function generateCumulativeScoreChart(chartId, gameName) {
         return c3.generate({
@@ -51,7 +56,7 @@
                 show: false
             },
             zoom: {
-                enabled: true
+                enabled: false
             },
             grid: {
                 x: {
@@ -93,7 +98,26 @@
         });
     }
 
+    function appendAveragesToDOM(nodeId, playerAverages) {
+        var node = document.getElementById(nodeId.replace('#', ''));
+
+        for(var player in playerAverages) {
+            var average = playerAverages[player];
+
+            if (average === null) {
+                continue;
+            }
+
+            var div = document.createElement("div");
+            var text = document.createTextNode(player + ' average score: ' + average);
+            div.appendChild(text);
+            node.appendChild(div);
+        }
+    }
+
     function generateScoreChart(chartId, gameName) {
+        appendAveragesToDOM(chartId + '-averages', scoreAverageColumns[gameName]);
+
         return c3.generate({
             bindto: chartId,
             data: {
@@ -110,7 +134,7 @@
                 show: false
             },
             zoom: {
-                enabled: true
+                enabled: false
             },
             grid: {
                 x: {
