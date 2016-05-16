@@ -6,6 +6,8 @@ let shuffle = require('./../utils/shuffle').shuffle;
 let sample = require('./../utils/shuffle').sample;
 let Node = require('./node').Node;
 let nodeReward = require('./node-reward');
+let fs = require('fs');
+const enhancementsConfig = require(__dirname + '/../config.js').enhancements;
 
 class ISMCTSNode extends Node {
   expand(deterministicGame) {
@@ -23,7 +25,7 @@ class ISMCTSNode extends Node {
       throw new Error('Get Possible Moves and Randomize game are not coherent')
     }
 
-    let expanded = new ISMCTSNode({
+    let expanded = new this.mcts.NodeClass({
       game: this.game,
       player: deterministicGame.nextPlayer,
       parent: this,
@@ -65,7 +67,7 @@ function select(node, deterministicGame, explorationConstant) {
   return node;
 }
 
-ISMCTS.prototype.simulate = function(deterministicGame) {
+ISMCTS.prototype.simulate = function(deterministicGame, expandedNode) {
   let possibleMoves = deterministicGame.getPossibleMoves();
   let move;
   while(!_.isEmpty(possibleMoves)) {
@@ -89,19 +91,36 @@ let getUCB1 = function (explorationValue, node) {
   }
 };
 
-function ISMCTS(game, player, configs)  {
+function ISMCTS(game, player, options)  {
   this.game = game;
-  this.iterations = configs.iterations || 1000;
+  this.iterations = options.iterations || 1000;
   this.player = typeof player == 'undefined' ? 0 : player;
-  this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
+  this.rng = options.rng ? options.rng : randomGenerator(null, { state: true });
 
-  this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
-  let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
+  this.explorationConstant = _.get(options, 'explorationConstant', (Math.sqrt(2) / 2) );
+  let rewardFnName = _.get(options, 'enhancements.reward', 'positive-win-or-loss');
+  let simulationEnhancement = _.get(options, 'enhancements.simulation', null);
+
   Node.prototype.getReward = nodeReward[rewardFnName];
+  this.NodeClass = ISMCTSNode;
+
+  if (simulationEnhancement) {
+    let modulePath = enhancementsConfig.simulation[simulationEnhancement].module;
+    let enhancementModule = require(modulePath);
+    enhancementModule.decorateSearchAlgorithm(this);
+  }
 }
 
+ISMCTS.prototype.getNodeClass = function() {
+  return this.NodeClass;
+};
+
+ISMCTS.prototype.setNodeClass = function(NodeClass) {
+  this.NodeClass = NodeClass;
+};
+
 ISMCTS.prototype.selectMove = function () {
-  this.rootNode = new ISMCTSNode({
+  this.rootNode = new this.NodeClass({
     game: this.game,
     player: this.game.nextPlayer,
     depth: 0,
@@ -113,7 +132,7 @@ ISMCTS.prototype.selectMove = function () {
     let deterministicGame = node.determinize();
     node = select(node, deterministicGame, this.explorationConstant);
     node = node.expand(deterministicGame);
-    let finishedGame = this.simulate(deterministicGame);
+    let finishedGame = this.simulate(deterministicGame, node);
     node.backPropagate(finishedGame);
   }
 

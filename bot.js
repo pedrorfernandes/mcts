@@ -5,7 +5,7 @@ let playBotWars = require('./botwars-interface');
 let seedrandom = require('seedrandom');
 let Dumper = require('./treeviz/dumper');
 let fs = require('fs');
-const config = JSON.parse(fs.readFileSync("config.json"));
+const config = require('config.js');
 
 let defaultSearchOptions = { iterations: 10000, explorationConstant: (Math.sqrt(2) / 2) };
 let defaultEnhancements =  { reward: 'positive-win-or-loss' };

@@ -7,7 +7,7 @@ let N1qlQuery = couchbase.N1qlQuery;
 let Promise = require('bluebird');
 let crypto = require('crypto');
 
-const dbConfig = JSON.parse(fs.readFileSync(__dirname + '/../config.json')).couchbase;
+const dbConfig = require(__dirname + '/../config.js').couchbase;
 
 function getNoopFunction(value) {
   return () => value;
