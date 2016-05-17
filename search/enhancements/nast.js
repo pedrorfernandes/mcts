@@ -166,7 +166,10 @@ module.exports = {
 
     let nGramLength = _.get(options, 'nGramLength', 2);
     // the lower the constant, the greedier the move simulation selection
-    gibbsGreedyConstant = _.get(options, 'gibbsGreedyConstant', 0.1);
+    // τ ∈ {0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 1, 1.5, 2, 4}
+    gibbsGreedyConstant = _.get(options, 'gibbsGreedyConstant', 1.0);
+    // For ε-greedy, ε ∈ {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6} was tested and ε = 0.2 found to be best
+
     // minimum times an nGram was counted for it to be reliable measure
     nGramMinimumCountThreshold = _.get(options, 'nGramMinimumCountThreshold', 7);
 
