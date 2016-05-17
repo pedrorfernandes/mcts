@@ -99,15 +99,19 @@ function ISMCTS(game, player, options)  {
 
   this.explorationConstant = _.get(options, 'explorationConstant', (Math.sqrt(2) / 2) );
   let rewardFnName = _.get(options, 'enhancements.reward', 'positive-win-or-loss');
-  let simulationEnhancement = _.get(options, 'enhancements.simulation', null);
+  let simulationOptions = _.get(options, 'enhancements.simulation', null);
 
   Node.prototype.getReward = nodeReward[rewardFnName];
   this.NodeClass = ISMCTSNode;
 
-  if (simulationEnhancement) {
-    let modulePath = enhancementsConfig.simulation[simulationEnhancement].module;
+  if (simulationOptions && !simulationOptions.name) {
+    throw new Error('simulation options must be an object!')
+  }
+
+  if (simulationOptions && simulationOptions.name) {
+    let modulePath = enhancementsConfig.simulation[simulationOptions.name].module;
     let enhancementModule = require(modulePath);
-    enhancementModule.decorateSearchAlgorithm(this);
+    enhancementModule.decorateSearchAlgorithm(this, simulationOptions);
   }
 }
 
