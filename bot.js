@@ -7,8 +7,8 @@ let Dumper = require('./treeviz/dumper');
 let fs = require('fs');
 const config = require('./config.js');
 
-let defaultSearchOptions = { iterations: 10000, explorationConstant: (Math.sqrt(2) / 2) };
-let defaultEnhancements =  { reward: 'positive-win-or-loss' };
+let defaultSearchOptions = {};
+let defaultEnhancements =  [];
 
 let program = require('commander');
 program
@@ -141,6 +141,6 @@ playBotWars({
   gameHref: gameName,
   player: playerNumber,
   gameInterface: gameInterface,
-  gameType: 'competitions',
+  gameType: 'games',
   gameName: competitionName
 });
