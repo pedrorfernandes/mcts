@@ -139,6 +139,6 @@ playBotWars({
   gameHref: gameName,
   player: playerNumber,
   gameInterface: gameInterface,
-  gameType: 'games',
+  gameType: 'competitions',
   gameName: competitionName
 });
