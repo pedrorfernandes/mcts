@@ -8,29 +8,56 @@ let N1qlQuery = couchbase.N1qlQuery;
 let Promise = require('bluebird');
 let Mustache = require('mustache');
 
-const dbConfig = JSON.parse(fs.readFileSync(__dirname + '/../../config.json')).couchbase;
+const dbConfig = require(__dirname + '/../../config.js').couchbase;
 
 function getWorkingDatabase(bucket) {
 
     let bucketQuery = Promise.promisify(bucket.query, { context: bucket });
 
-    function getWinnersOrderedByTimestamp() {
+    function getGameIdsOfCompetition(competitionName) {
         let query = N1qlQuery.fromString(`
-          select default.game.winners, default.game.gameClass from default where type = 'game' order by timestamp asc
+          select default.gameIds from default where type = 'competition' and comp.name like "${competitionName}%"
         `);
-        return bucketQuery(query);
+
+        return bucketQuery(query).then(function (results) {
+            return _.flatMap(results, result => result.gameIds);
+        });
     }
 
-    function getScoresOrderedByTimestamp() {
-        let query = N1qlQuery.fromString(`
+    function getWinnersOrderedByTimestamp(competitionPrefix) {
+
+        if (competitionPrefix) {
+            return getGameIdsOfCompetition(competitionPrefix).then(function (gameIds) {
+                return bucketQuery(N1qlQuery.fromString(`
+                    select default.game.winners, default.game.gameClass from default where type = 'game' and id in ["${gameIds.join('","')}"] order by timestamp asc
+                `));
+            });
+        }
+
+        return bucketQuery(N1qlQuery.fromString(`
+            select default.game.winners, default.game.gameClass from default where type = 'game' order by timestamp asc
+        `));
+    }
+
+    function getScoresOrderedByTimestamp(competitionPrefix) {
+
+        if (competitionPrefix) {
+            return getGameIdsOfCompetition(competitionPrefix).then(function (gameIds) {
+                return bucketQuery(N1qlQuery.fromString(`
+                    select default.game.score, default.game.gameClass from default where type = 'game' and id in ["${gameIds.join('","')}"] order by timestamp asc
+                `));
+            });
+        }
+
+        return bucketQuery(N1qlQuery.fromString(`
           select default.game.score, default.game.gameClass from default where type = 'game' order by timestamp asc
-        `);
-        return bucketQuery(query);
+        `));
     }
 
     return {
         getWinnersOrderedByTimestamp: getWinnersOrderedByTimestamp,
-        getScoresOrderedByTimestamp: getScoresOrderedByTimestamp
+        getScoresOrderedByTimestamp: getScoresOrderedByTimestamp,
+        getGameIdsOfCompetition: getGameIdsOfCompetition
     }
 }
 
@@ -51,15 +78,15 @@ let databaseInstancePromise = new Promise(function (resolve, reject) {
     });
 });
 
-databaseInstancePromise.then(dbInstance => {
+function writeReportForGames(dbInstance, competitionPrefix, fileSuffix, botNameSuffix) {
 
     let players = ['Player 1', 'Player 2', 'Player 3', 'Player 4'];
 
     let botNames = [
-        'ISMCTS 10k iterations',
-        'Det. UCT 500 iterations * 40 determinizations',
-        'ISMCTS 10k iterations',
-        'Det. UCT 500 iterations * 40 determinizations'
+        'Pure ISMCTS',
+        'ISMCTS + NAST, N=2, UCB1',
+        'Pure ISMCTS',
+        'ISMCTS + NAST, N=2, UCB1',
     ];
 
     let title = botNames[0] + ' VS ' + botNames[1];
@@ -102,7 +129,7 @@ databaseInstancePromise.then(dbInstance => {
         return winners.indexOf(playerIndex + 1) > -1;
     }
 
-    let getWinners = dbInstance.getWinnersOrderedByTimestamp().then(winnersList => {
+    let getWinners = dbInstance.getWinnersOrderedByTimestamp(competitionPrefix).then(winnersList => {
 
         winnersList.forEach(winningPlayersObject => {
             let gameWinners = winningPlayersObject.winners;
@@ -125,7 +152,7 @@ databaseInstancePromise.then(dbInstance => {
         });
     });
 
-    let getScores = dbInstance.getScoresOrderedByTimestamp().then(scoresList => {
+    let getScores = dbInstance.getScoresOrderedByTimestamp(competitionPrefix).then(scoresList => {
 
         scoresList.forEach(scoresObject => {
             let scores = scoresObject.score;
@@ -146,7 +173,7 @@ databaseInstancePromise.then(dbInstance => {
           _.mapValues(playerScores, scores => scores.sort((a,b) => a - b)));
     });
 
-    Promise.all([getWinners, getScores]).then(function () {
+    return Promise.all([getWinners, getScores]).then(function () {
         function toDataColumns(dataObject) {
             return Object.keys(dataObject).map(function (playerKey) {
                 return [playerKey].concat(dataObject[playerKey].map(n => n.toFixed(3)));
@@ -182,10 +209,26 @@ databaseInstancePromise.then(dbInstance => {
             scoresOverGames: JSON.stringify(sortedScoresDistributionColumns),
             scoreAverages: JSON.stringify(scoreAverages),
             title: title
-        }).replace(/&quot;/g, '\'');
+        }).replace(/&quot;/g, '\'').replace(/&#x3D;/g, '=');
 
-        fs.writeFileSync(__dirname + '/victory-charts.html', output);
-        process.exit();
+        let fileName = fileSuffix ? `/victory-charts${fileSuffix}.html` : '/victory-charts.html';
+        fs.writeFileSync(__dirname + fileName, output);
+    });
+
+}
+
+databaseInstancePromise.then(dbInstance => {
+
+    let competitions = [
+        {prefix: "Pure ISMCTS VS ISMCTS + NAST (N=2, UCB1)", fileSuffix: '', botNameSuffix: ''},
+    ];
+
+    let writeReportPromises = competitions.map(function (competition) {
+        return writeReportForGames(dbInstance, competition.prefix, competition.fileSuffix, competition.botNameSuffix);
+    });
+
+    Promise.all(writeReportPromises).then(function () {
+        process.exit(0);
     });
 
 });

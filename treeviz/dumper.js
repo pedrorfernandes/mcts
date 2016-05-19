@@ -23,8 +23,24 @@ function replacer(key, value) {
   return value;
 }
 
+function limitChildrenToDepth(node, depth) {
+  if (depth === 0) {
+    return null;
+  }
+
+  if (!node || !node.children) {
+    return node;
+  }
+
+  node.children = node.children.map(child => limitChildrenToDepth(child, depth - 1));
+
+  return node;
+}
+
 let saveGameTreeToFile = function(fileName, mcts) {
-  let gameTreeJson = stringify(mcts.rootNode, replacer, null, function(){});
+  let limitedRootNode = limitChildrenToDepth(mcts.rootNode, 7);
+
+  let gameTreeJson = stringify(limitedRootNode, replacer, null, function(){});
   let compressedData = LZString.compressToUTF16(gameTreeJson);
   let treeFilePath = __dirname + '/trees/' + fileName;
   fs.writeFile(treeFilePath, compressedData, function(err) {
@@ -104,7 +120,7 @@ let saveGameStateAndTreeToFiles = function(fileName, mcts) {
 module.exports = {
   createStateJson: createStateJson,
   saveStateJSONToDatabase: saveStateJSONToDatabase,
-  
+
   saveGameTreeToFile: saveGameTreeToFile,
   saveGameStateToDatabase: saveGameStateToDatabase,
   saveGameStateToFile: saveGameStateToFile,
