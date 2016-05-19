@@ -6,6 +6,7 @@ let shuffle = require('../utils/shuffle').shuffle;
 let sample = require('../utils/shuffle').sample;
 let Combinatorics = require('js-combinatorics');
 let CardGame = require('./card-game');
+let crypto = require('crypto');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -155,6 +156,27 @@ class Sueca extends CardGame {
     this.lastTrick = null;
     this.error = game.error;
   };
+
+  toUniqueStateHash() {
+    let cardSort = (card1, card2) => card1 > card2;
+
+    let uniqueCharacteristics = {
+      trumpPlayer: this.trumpPlayer,
+      nextPlayer: this.nextPlayer,
+      hands: this.hands.map(h => h.sort(cardSort)),
+      wonCards: _.flatten(this.wonCards).sort(cardSort),
+      trumpSuit: this.trumpSuit,
+      trumpCard: this.trumpCard,
+      trick: this.trick,
+      score: this._getTeamScores(),
+      round: this.round,
+      suitToFollow: this.suitToFollow,
+      hasSuits: this.hasSuits,
+      winners: this.winners
+  };
+
+    return crypto.createHash('md5').update(JSON.stringify(uniqueCharacteristics)).digest("hex");
+  }
 
   getFullState() {
     return _.pick(this, [

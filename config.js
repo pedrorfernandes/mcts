@@ -39,18 +39,32 @@ module.exports = {
 
   enhancements: {
 
-    reward: {
-      module: __dirname + '/search/node-reward',
-      functions: {
-        'positive-win-or-loss': 'getPositiveWinOrLoss',
-        'scores-difference': 'getScoresDifference',
-        'win-or-loss': 'getWinOrLoss'
+    'reward': {
+      'positive-win-or-loss': {
+        module: __dirname + '/search/node-reward',
+        functionName: 'decorateWithPositiveWinOrLossReward'
+      },
+      'scores-difference': {
+        module: __dirname + '/search/node-reward',
+        functionName: 'decorateWithScoresDifferenceReward'
+      },
+      'win-or-loss': {
+        module: __dirname + '/search/node-reward',
+        functionName: 'decorateWithWinOrLossReward'
       }
     },
 
-    simulation: {
-      nast: {
-        module: __dirname + '/search/enhancements/nast'
+    'simulation': {
+      'nast': {
+        module: __dirname + '/search/enhancements/nast',
+        functionName: 'decorateSearchAlgorithm'
+      }
+    },
+
+    'node-expansion': {
+      'unification': {
+        module: __dirname + '/search/enhancements/tree-node-unification',
+        functionName: 'decorateSearchAlgorithm'
       }
     }
 

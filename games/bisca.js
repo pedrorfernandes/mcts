@@ -172,6 +172,10 @@ class Bisca extends CardGame {
     this.error = game.error;
   };
 
+  toUniqueStateHash() {
+    throw new Error(this.constructor.name + '.toUniqueStateHash is not implemented yet!');
+  }
+
   getFullState() {
     return _.pick(this, [
       'numberOfPlayers', 'deck', 'hands', 'trumpCard', 'trump',

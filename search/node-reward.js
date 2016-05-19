@@ -36,8 +36,22 @@ function getScoresDifference(game, player, initialNode) {
   return game.getWonGames(player);
 }
 
+function decorateSearchAlgorithmReward(rewardFunction) {
+
+  return function(searchAlgorithmInstance, options) {
+    let NodeClass = searchAlgorithmInstance.getNodeClass();
+    let DecoratedNodeClass = class extends NodeClass {};
+
+    DecoratedNodeClass.getReward = rewardFunction;
+    searchAlgorithmInstance.setNodeClass(DecoratedNodeClass);
+  }
+}
+
 module.exports = {
-  'positive-win-or-loss': getPositiveWinOrLoss,
-  'win-or-loss': getWinOrLoss,
-  'scores-difference': getScoresDifference
+  getPositiveWinOrLoss:   getPositiveWinOrLoss,
+  getWinOrLoss:           getWinOrLoss,
+  getScoresDifference:    getScoresDifference,
+  decorateWithPositiveWinOrLossReward: decorateSearchAlgorithmReward(getPositiveWinOrLoss),
+  decorateWithWinOrLossReward:         decorateSearchAlgorithmReward(getWinOrLoss),
+  decorateWithScoresDifferenceReward:  decorateSearchAlgorithmReward(getScoresDifference),
 };

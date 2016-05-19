@@ -156,6 +156,10 @@ class Hearts extends CardGame {
     this.error = game.error;
   };
 
+  toUniqueStateHash() {
+    throw new Error(this.constructor.name + '.toUniqueStateHash is not implemented yet!');
+  }
+
   getFullState() {
     return _.pick(this, [
       'hands', 'nextPlayer', 'lastTrick', 'trick', 'wonCards',

@@ -3,7 +3,7 @@
 'use strict';
 
 let _ = require('lodash');
-let nodeReward = require('./node-reward');
+let NodeReward = require('./node-reward');
 
 function isExpanded(node) {
   return node !== null;
@@ -52,7 +52,7 @@ class Node {
   }
 
   getReward(game, player, initialNode) {
-    throw new Error('The search algorithm must override Node.getReward!');
+    return NodeReward.getPositiveWinOrLoss(game, player);
   };
 
   backPropagate(finishedGame) {
@@ -69,6 +69,22 @@ class Node {
     let cloneGame = new this.game.constructor(this.game);
     cloneGame = cloneGame.randomize(this.mcts.rng, this.mcts.player);
     return cloneGame;
+  }
+
+  createChildNode(move, childIndex, overrides) {
+    let options = _.defaults(overrides, {
+      game: this.game,
+      player: this.game.nextPlayer,
+      parent: this,
+      move: move,
+      mcts: this.mcts
+    });
+
+    let child = new this.constructor(options);
+
+    this.children[childIndex] = child;
+
+    return child;
   }
 }
 

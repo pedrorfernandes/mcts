@@ -7,7 +7,11 @@ let randomGenerator = require('seedrandom');
 let shuffle = require('./../utils/shuffle').shuffle;
 let sample = require('./../utils/shuffle').sample;
 let Node = require('./node').Node;
-let nodeReward = require('./node-reward');
+let SearchAlgorithm = require('./search-algorithm');
+
+function isNotExpanded(node) {
+  return node === null;
+}
 
 class DeterminizedUCTNode extends Node {
 
@@ -25,124 +29,111 @@ class DeterminizedUCTNode extends Node {
       this.mcts.rng
     );
 
-    let expanded = new DeterminizedUCTNode({
-      game: this.game,
-      parent: this,
-      move: this.possibleMoves[moveIndex],
-      depth: this.depth + 1,
-      mcts: this.mcts
-    });
+    let move = this.possibleMoves[moveIndex];
 
-    children[moveIndex] = expanded;
-
-    return expanded;
+    return this.createChildNode(move, moveIndex);
   };
 
-  bestChild(explorationValue) {
+  getUCB1(explorationConstant, node) {
+    if (explorationConstant !== 0) {
+      return (node.wins / node.visits) + explorationConstant * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
+    } else {
+      return (node.wins / node.visits);
+    }
+  }
+
+  bestChild(explorationConstant) {
     let shuffled = shuffle(this.getChildNodes().slice(), this.mcts.rng);
-    return _.maxBy(shuffled, nodeValue.bind(null, explorationValue));
-  };
-}
-
-function isNotExpanded(node) {
-  return node === null;
-}
-
-function select(node, explorationConstant) {
-  while(!node.isTerminal()) {
-    if (node.isExpandable()) {
-      return node.expand();
-    }
-    else {
-      node = node.bestChild(explorationConstant);
-    }
+    return _.maxBy(shuffled, node => this.getUCB1(explorationConstant, node));
   }
-  return node;
 }
-
-function simulate(node) {
-  let clonedGame = new node.game.constructor(node.game);
-  let possibleMoves = node.game.getPossibleMoves();
-  let move;
-  while(!_.isEmpty(possibleMoves)) {
-    move = sample(possibleMoves, node.mcts.rng);
-    clonedGame.performMove(move);
-    possibleMoves = clonedGame.getPossibleMoves();
-  }
-  return clonedGame;
-}
-
-let nodeValue = function(explorationValue, node) {
-  return getUCB1(explorationValue, node);
-};
 
 let NO_EXPLORATION = 0;
-let getUCB1 = function (explorationValue, node) {
-  if (explorationValue !== 0) {
-    return (node.wins / node.visits) + explorationValue * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
-  } else {
-    return (node.wins / node.visits);
+
+class DeterminizedUCT extends SearchAlgorithm {
+  constructor(game, player, configs) {
+    super(game, player, configs);
+    this.game = game;
+    this.iterations = configs.iterations || 100;
+    this.determinizations = configs.determinizations || 100;
+    this.player = typeof player == 'undefined' ? 0 : player;
+    this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
+    this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
   }
-};
 
-function DeterminizedUCT(game, player, configs) {
-  this.game = game;
-  this.iterations = configs.iterations || 100;
-  this.determinizations = configs.determinizations || 100;
-  this.player = typeof player == 'undefined' ? 0 : player;
+  getBasicNodeClass() {
+    return DeterminizedUCTNode;
+  }
 
-  this.rng = configs.rng ? configs.rng: randomGenerator(null, { state: true });
+  selectMove() {
+    this.rootNodes = [];
 
-  this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
-  let rewardFnName = _.get(configs, 'enhancements.reward', 'positive-win-or-loss');
-  Node.prototype.getReward = nodeReward[rewardFnName];
-}
+    let initialNode = new Node({ game: this.game, depth: 0, mcts: this });
 
-DeterminizedUCT.prototype.selectMove = function () {
-  this.rootNodes = [];
+    for(let d = 0; d < this.determinizations; d++) {
+      let deterministicGame = initialNode.determinize();
 
-  let initialNode = new Node({ game: this.game, depth: 0, mcts: this });
+      let rootNode = new DeterminizedUCTNode({
+        game: deterministicGame,
+        depth: 0,
+        mcts: this
+      });
 
-  for(let d = 0; d < this.determinizations; d++) {
-    let deterministicGame = initialNode.determinize();
+      for (let i = 0; i < this.iterations; i++) {
+        let selectedNode = this.select(rootNode, this.explorationConstant);
+        let endGame = this.simulate(selectedNode);
+        selectedNode.backPropagate(endGame);
+      }
 
-    let rootNode = new DeterminizedUCTNode({
-      game: deterministicGame,
-      depth: 0,
-      mcts: this
-    });
-
-    for (let i = 0; i < this.iterations; i++) {
-      let selectedNode = select(rootNode, this.explorationConstant);
-      let endGame = simulate(selectedNode);
-      selectedNode.backPropagate(endGame);
+      this.rootNodes.push(rootNode);
     }
 
-    this.rootNodes.push(rootNode);
-  }
+    function addStatistics(receiverNode, node) {
+      receiverNode.visits += node.visits;
+      receiverNode.wins += node.wins;
+      receiverNode.avails += node.avails;
+    }
 
+    this.rootNode = this.rootNodes.reduce(function updateStats(rootNode, node, index) {
+      if (index === 0) {
+        return rootNode;
+      }
 
-  function addStatistics(receiverNode, node) {
-    receiverNode.visits += node.visits;
-    receiverNode.wins += node.wins;
-    receiverNode.avails += node.avails;
-  }
+      addStatistics(rootNode, node);
 
-  this.rootNode = this.rootNodes.reduce(function updateStats(rootNode, node, index) {
-    if (index === 0) {
+      rootNode.children.forEach(function(child, index) {
+        addStatistics(child, node.children[index]);
+      });
+
       return rootNode;
+    }, this.rootNodes[0]);
+
+    return this.rootNode.bestChild(NO_EXPLORATION).move;
+  }
+
+  select(node, explorationConstant) {
+    while(!node.isTerminal()) {
+      if (node.isExpandable()) {
+        return node.expand();
+      }
+      else {
+        node = node.bestChild(explorationConstant);
+      }
     }
+    return node;
+  }
 
-    addStatistics(rootNode, node);
-
-    rootNode.children.forEach(function(child, index) {
-      addStatistics(child, node.children[index]);
-    });
-
-    return rootNode;
-  }, this.rootNodes[0]);
-
-  return this.rootNode.bestChild(NO_EXPLORATION).move;
-};
+  simulate(node) {
+    let clonedGame = new node.game.constructor(node.game);
+    let possibleMoves = node.game.getPossibleMoves();
+    let move;
+    while(!_.isEmpty(possibleMoves)) {
+      move = sample(possibleMoves, node.mcts.rng);
+      clonedGame.performMove(move);
+      possibleMoves = clonedGame.getPossibleMoves();
+    }
+    return clonedGame;
+  }
+}
 
 module.exports = DeterminizedUCT;
