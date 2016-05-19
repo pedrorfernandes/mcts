@@ -1,10 +1,8 @@
 'use strict';
 
-let _ = require('lodash');
 let playBotWars = require('./botwars-interface');
 let seedrandom = require('seedrandom');
 let Dumper = require('./treeviz/dumper');
-let fs = require('fs');
 const config = require('./config.js');
 
 let defaultSearchOptions = {};

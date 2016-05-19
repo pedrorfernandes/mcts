@@ -160,6 +160,8 @@ class Sueca extends CardGame {
   toUniqueStateHash() {
     let cardSort = (card1, card2) => card1 > card2;
 
+    this.score = this._getTeamScores();
+
     let uniqueCharacteristics = {
       trumpPlayer: this.trumpPlayer,
       nextPlayer: this.nextPlayer,
@@ -168,12 +170,12 @@ class Sueca extends CardGame {
       trumpSuit: this.trumpSuit,
       trumpCard: this.trumpCard,
       trick: this.trick,
-      score: this._getTeamScores(),
+      score: this.score,
       round: this.round,
       suitToFollow: this.suitToFollow,
       hasSuits: this.hasSuits,
       winners: this.winners
-  };
+    };
 
     return crypto.createHash('md5').update(JSON.stringify(uniqueCharacteristics)).digest("hex");
   }

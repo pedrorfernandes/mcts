@@ -5,6 +5,7 @@ let randomGenerator = require('seedrandom');
 var shuffle = require('../utils/shuffle').shuffle;
 var sample = require('../utils/shuffle').sample;
 let CardGame = require('./card-game');
+let crypto = require('crypto');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -173,7 +174,28 @@ class Bisca extends CardGame {
   };
 
   toUniqueStateHash() {
-    throw new Error(this.constructor.name + '.toUniqueStateHash is not implemented yet!');
+    let cardSort = (card1, card2) => card1 > card2;
+
+    this.score = this._getTeamScores();
+
+    let uniqueCharacteristics = {
+      numberOfPlayers: this.numberOfPlayers,
+      deck: this.deck,
+      hands: this.hands.map(h => h.sort(cardSort)),
+      trumpCard: this.trumpCard,
+      trump: this.trump,
+      startingPlayer: this.startingPlayer,
+      nextPlayer: this.nextPlayer,
+      trick: this.trick,
+      wonCards: _.flatten(this.wonCards).sort(cardSort),
+      round: this.round,
+      suitToFollow: this.suitToFollow,
+      hasSuits: this.hasSuits,
+      winners: this.winners,
+      score: this.score
+    };
+
+    return crypto.createHash('md5').update(JSON.stringify(uniqueCharacteristics)).digest("hex");
   }
 
   getFullState() {
