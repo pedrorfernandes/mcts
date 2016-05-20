@@ -53,10 +53,8 @@ let NO_EXPLORATION = 0;
 class DeterminizedUCT extends SearchAlgorithm {
   constructor(game, player, configs) {
     super(game, player, configs);
-    this.game = game;
     this.iterations = configs.iterations || 100;
     this.determinizations = configs.determinizations || 100;
-    this.player = typeof player == 'undefined' ? 0 : player;
     this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
     this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
   }
@@ -73,7 +71,7 @@ class DeterminizedUCT extends SearchAlgorithm {
     for(let d = 0; d < this.determinizations; d++) {
       let deterministicGame = initialNode.determinize();
 
-      let rootNode = new DeterminizedUCTNode({
+      let rootNode = new this.NodeClass({
         game: deterministicGame,
         depth: 0,
         mcts: this

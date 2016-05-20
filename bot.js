@@ -1,5 +1,6 @@
 'use strict';
 
+let _ = require('lodash');
 let playBotWars = require('./botwars-interface');
 let seedrandom = require('seedrandom');
 let Dumper = require('./treeviz/dumper');
@@ -30,6 +31,22 @@ let playerNumber = program.player;
 let competitionName = program.competition;
 
 let game;
+let mcts;
+let moveHistorySincePreviousSearch = [];
+
+function getSubTreePreservationOptions(searchOptions) {
+  return _.find(searchOptions.enhancements, options => options.name === 'sub-tree-preservation');
+}
+
+function getSearchOptionsWithPreservedSubTree(searchOptions) {
+  let searchOptionsClone = _.cloneDeep(searchOptions);
+  let subTreePreservationOptionsClone = getSubTreePreservationOptions(searchOptionsClone);
+  subTreePreservationOptionsClone.previousSearchAlgorithm = mcts;
+  subTreePreservationOptionsClone.moveHistorySincePreviousSearch = moveHistorySincePreviousSearch;
+  return searchOptionsClone;
+}
+
+let subTreePreservationOptions = getSubTreePreservationOptions(searchOptions);
 
 function getInitialMovesCount() {
   // offset to sync tree dumps with BotWars pagination
@@ -56,7 +73,12 @@ function startHandler(event, callback) {
 function requestMoveHandler(event, callback) {
   game = toGame(event);
 
-  let mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
+  if (subTreePreservationOptions && mcts) {
+    let searchOptionsClone = getSearchOptionsWithPreservedSubTree(searchOptions);
+    mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptionsClone);
+  } else {
+    mcts = new SearchAlgorithm(game, game.nextPlayer, searchOptions);
+  }
 
   let stateJson = Dumper.createStateJson({
     mcts: mcts,
@@ -85,6 +107,8 @@ function requestMoveHandler(event, callback) {
     stateJson.computationTime = hrEnd[0] * 1000 + hrEnd[1]/1000000;
     stateJson.move = move;
 
+    moveHistorySincePreviousSearch = [];
+
     callback(null, mapCardInverse(move));
 
     Dumper.saveStateJSONToDatabase(stateJson);
@@ -107,6 +131,7 @@ function moveHandler(event, callback) {
   }
   game.performMove(mapCard(event.move));
   movesCount += 1;
+  moveHistorySincePreviousSearch.push(event.move);
 }
 
 let handlers = {

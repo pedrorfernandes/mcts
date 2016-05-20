@@ -5,6 +5,8 @@ const config = require(__dirname + '/../config.js').enhancements;
 class SearchAlgorithm {
   constructor(game, player, options) {
     this.setNodeClass(this.getBasicNodeClass());
+    this.game = game;
+    this.player = typeof player == 'undefined' ? 0 : player;
 
     let enhancements = options.enhancements || [];
 

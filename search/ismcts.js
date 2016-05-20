@@ -61,9 +61,7 @@ class ISMCTSNode extends Node {
 class ISMCTS extends SearchAlgorithm {
   constructor(game, player, options) {
     super(game, player, options);
-    this.game = game;
     this.iterations = options.iterations || 1000;
-    this.player = typeof player == 'undefined' ? 0 : player;
     this.rng = options.rng ? options.rng : randomGenerator(null, {state: true});
     this.explorationConstant = _.get(options, 'explorationConstant', (Math.sqrt(2) / 2));
   }
@@ -71,14 +69,18 @@ class ISMCTS extends SearchAlgorithm {
   getBasicNodeClass() {
     return ISMCTSNode;
   }
-
-  selectMove() {
-    this.rootNode = new this.NodeClass({
+  
+  getInitialRootNode() {
+    return new this.NodeClass({
       game: this.game,
       player: this.game.nextPlayer,
       depth: 0,
       mcts: this
     });
+  }
+
+  selectMove() {
+    this.rootNode = this.getInitialRootNode();
 
     for(let i = 0; i < this.iterations; i ++) {
       let node = this.rootNode;

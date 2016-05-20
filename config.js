@@ -66,6 +66,13 @@ module.exports = {
         module: __dirname + '/search/enhancements/tree-node-unification',
         functionName: 'decorateSearchAlgorithm'
       }
+    },
+    
+    'tree-init': {
+      'sub-tree-preservation': {
+        module: __dirname + '/search/enhancements/sub-tree-preservation',
+        functionName: 'decorateSearchAlgorithm'
+      }
     }
 
   },
