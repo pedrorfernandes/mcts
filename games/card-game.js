@@ -3,6 +3,7 @@
 let _ = require('lodash');
 let shuffle = require('../utils/shuffle').shuffle;
 let sample = require('../utils/shuffle').sample;
+let Combinatorics = require('js-combinatorics');
 
 function toPlayer(playerIndex) {
   return playerIndex + 1;
@@ -109,7 +110,9 @@ function printMatrix(matrix, hands, playerIndexes) {
 
 class CardGame {
 
-  constructor(options) {}
+  constructor(options) {
+
+  }
 
   getUnknownCards() {
     throw new Error(this.constructor.name + ".getUnknownCards not implemented");
@@ -266,6 +269,48 @@ class CardGame {
     }
 
     return this._assignRandomCardsWithRestrictions(unknownCards, rng);
+  }
+
+  getAllPossibleHands() {
+
+    let numberOfPlayers = this.hands.length;
+
+    let flatten = (a, b) => a.concat(b);
+
+    let buildCombinations = (playerIndex, possibleCards, accumulator) => {
+
+      if ( playerIndex >= numberOfPlayers ) {
+        return accumulator;
+      }
+
+      let playerHand = this.hands[playerIndex];
+
+      let numberOfCardsToTake = playerHand.filter(isCardHidden).length;
+
+      if (numberOfCardsToTake === 0) {
+        return buildCombinations(playerIndex + 1, possibleCards, accumulator.concat([playerHand]));
+      }
+
+      return Combinatorics.combination(possibleCards, numberOfCardsToTake)
+        .map(function (combination) {
+          let nextPossible = _.difference(possibleCards, combination);
+
+          let newHand = playerHand.concat(combination);
+
+          return buildCombinations(playerIndex + 1, nextPossible, accumulator.concat([newHand]));
+        })
+        .reduce(flatten)
+    };
+
+    return _.chunk(buildCombinations(0, this.getUnknownCards(), []), numberOfPlayers);
+  }
+
+  getAllPossibleStates() {
+    return this.getAllPossibleHands().map((possibleHand) => {
+      let possibleGame = new this.constructor(this);
+      possibleGame.hands = possibleHand;
+      return possibleGame;
+    });
   }
 }
 

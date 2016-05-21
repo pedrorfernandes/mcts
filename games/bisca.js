@@ -457,20 +457,21 @@ class Bisca extends CardGame {
     return this;
   }
 
-  getAllPossibleHands() {
-    throw new Error(this.constructor.name + ".getAllPossibleHands not implemented");
-  }
-
-  getAllPossibleStates() {
-    throw new Error(this.constructor.name + ".getAllPossibleStates not implemented");
-  }
-
   getTeam(player) {
-    throw new Error(this.constructor.name + ".getTeam not implemented");
+    return player;
   }
 
   getGameValue() {
-    throw new Error(this.constructor.name + ".getGameValue not implemented");
+    let winningBonus = 0;
+    let winner = this._getWinners();
+    if (winner && _.includes(winner, this.nextPlayer)) {
+      winningBonus = 1000;
+    }
+    else if (winner) {
+      winningBonus = -1000;
+    }
+
+    return winningBonus + this.getScore([this.nextPlayer]);
   }
 
   getPrettyPlayerHand(player) {

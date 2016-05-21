@@ -3,8 +3,6 @@
 let _ = require('lodash');
 let randomGenerator = require('seedrandom');
 let shuffle = require('../utils/shuffle').shuffle;
-let sample = require('../utils/shuffle').sample;
-let Combinatorics = require('js-combinatorics');
 let CardGame = require('./card-game');
 let crypto = require('crypto');
 
@@ -66,10 +64,6 @@ function copyHands(hand) {
   }
 
   return newArray
-}
-
-function flatten (a, b) {
-  return a.concat(b);
 }
 
 function isGame(object) {
@@ -397,48 +391,6 @@ class Sueca extends CardGame {
     return _.difference(startingDeck, this._getSeenCards());
   }
 
-  getAllPossibleHands() {
-    let unknownCards = this.getUnknownCards();
-
-    let self = this;
-    function buildCombinations(playerIndex, possibleCards, accumulator) {
-
-      if ( playerIndex >= 4 ) {
-        return accumulator;
-      }
-
-      let playerHand = self.hands[playerIndex];
-
-      let numberOfCardsToTake = playerHand.filter(isCardHidden).length;
-
-      if (numberOfCardsToTake === 0) {
-        return buildCombinations(playerIndex + 1, possibleCards, accumulator.concat([playerHand]));
-      }
-
-      return Combinatorics.combination(possibleCards, numberOfCardsToTake)
-        .map(function (combination) {
-          let nextPossible = _.difference(possibleCards, combination);
-
-          let newHand = playerHand.concat(combination);
-
-          return buildCombinations(playerIndex + 1, nextPossible, accumulator.concat([newHand]));
-        })
-        .reduce(flatten)
-    }
-
-    return _.chunk(buildCombinations(0, unknownCards, []), 4)
-  }
-
-  getAllPossibleStates() {
-    let self = this;
-    return this.getAllPossibleHands()
-      .map(function(possibleHand) {
-        let possibleGame = new Sueca(self);
-        possibleGame.hands = possibleHand;
-        return possibleGame
-      })
-  }
-
   getTeam(player) {
     if (player === 1 || player === 3) {
       return 0;
@@ -461,8 +413,6 @@ class Sueca extends CardGame {
       pointsDifferenceForNextPlayer = pointsTeam2 - pointsTeam1;
     }
 
-    let pointsInHand = this.getScore([this.nextPlayer]);
-
     let winningBonus = 0;
     let winner = this._getWinners();
     if (winner && _.includes(winner, this.nextPlayer)) {
@@ -472,7 +422,7 @@ class Sueca extends CardGame {
       winningBonus = -1000;
     }
 
-    return winningBonus + pointsDifferenceForNextPlayer + pointsInHand;
+    return winningBonus + pointsDifferenceForNextPlayer;
   }
 
   getPrettyPlayerHand(player) {

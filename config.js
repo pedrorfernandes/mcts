@@ -41,15 +41,15 @@ module.exports = {
 
     'reward': {
       'positive-win-or-loss': {
-        module: __dirname + '/search/node-reward',
+        module: __dirname + '/search/enhancements/node-reward',
         functionName: 'decorateWithPositiveWinOrLossReward'
       },
       'scores-difference': {
-        module: __dirname + '/search/node-reward',
+        module: __dirname + '/search/enhancements/node-reward',
         functionName: 'decorateWithScoresDifferenceReward'
       },
       'win-or-loss': {
-        module: __dirname + '/search/node-reward',
+        module: __dirname + '/search/enhancements/node-reward',
         functionName: 'decorateWithWinOrLossReward'
       }
     },
@@ -67,10 +67,17 @@ module.exports = {
         functionName: 'decorateSearchAlgorithm'
       }
     },
-    
+
     'tree-init': {
       'sub-tree-preservation': {
         module: __dirname + '/search/enhancements/sub-tree-preservation',
+        functionName: 'decorateSearchAlgorithm'
+      }
+    },
+
+    'hybrid-algorithm': {
+      'minimax-end-game': {
+        module: __dirname + '/search/enhancements/minimax-end-game',
         functionName: 'decorateSearchAlgorithm'
       }
     }

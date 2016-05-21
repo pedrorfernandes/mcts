@@ -9,7 +9,6 @@ let SearchAlgorithm = require('./search-algorithm');
 
 class ISMCTSNode extends Node {
   expand(deterministicGame) {
-    // let children = this.getChildNodes();
     let untriedMoves = this.getUntriedMoves(deterministicGame);
 
     if (untriedMoves.length === 0) {
@@ -69,7 +68,7 @@ class ISMCTS extends SearchAlgorithm {
   getBasicNodeClass() {
     return ISMCTSNode;
   }
-  
+
   getInitialRootNode() {
     return new this.NodeClass({
       game: this.game,

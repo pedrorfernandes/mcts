@@ -3,7 +3,7 @@
 'use strict';
 
 let _ = require('lodash');
-let NodeReward = require('./node-reward');
+let NodeReward = require('./enhancements/node-reward');
 
 function isExpanded(node) {
   return node !== null;
