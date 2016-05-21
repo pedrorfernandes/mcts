@@ -67,6 +67,8 @@ function toGame(event) {
 function startHandler(event, callback) {
   game = toGame(event);
   movesCount = getInitialMovesCount();
+  moveHistorySincePreviousSearch = [];
+  mcts = null;
   console.log('Game started');
 }
 
