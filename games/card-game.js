@@ -295,7 +295,7 @@ class CardGame {
         .map(function (combination) {
           let nextPossible = _.difference(possibleCards, combination);
 
-          let newHand = playerHand.concat(combination);
+          let newHand = playerHand.filter(isCardVisible).concat(combination);
 
           return buildCombinations(playerIndex + 1, nextPossible, accumulator.concat([newHand]));
         })
