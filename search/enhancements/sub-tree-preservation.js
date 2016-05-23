@@ -38,6 +38,8 @@ module.exports = {
       node.move = null;
       node.parent = null;
       node.game = searchAlgorithmInstance.game;
+      node.mcts = searchAlgorithmInstance;
+      node.depth = 0;
 
       let actualPossibleMoves = searchAlgorithmInstance.game.getPossibleMoves();
       let validMoveIndexes = getIndexesIn(actualPossibleMoves, node.possibleMoves);

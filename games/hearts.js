@@ -435,17 +435,17 @@ class Hearts extends CardGame {
     return player;
   }
 
-  getGameValue() {
+  getGameValue(player) {
     let winningBonus = 0;
     let winner = this._getWinners();
-    if (winner && _.includes(winner, this.nextPlayer)) {
+    if (winner && _.includes(winner, player)) {
       winningBonus = 1000;
     }
     else if (winner) {
       winningBonus = -1000;
     }
 
-    return winningBonus + this.getScore([this.nextPlayer]);
+    return winningBonus + this.getScore([player]);
   }
 
   getPrettyPlayerHand(player) {

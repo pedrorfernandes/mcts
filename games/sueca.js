@@ -398,7 +398,7 @@ class Sueca extends CardGame {
     return 1;
   }
 
-  getGameValue() {
+  getGameValue(player) {
     let team1 = [1, 3];
     let pointsTeam1 = this.getScore(team1);
 
@@ -406,7 +406,7 @@ class Sueca extends CardGame {
     let pointsTeam2 = this.getScore(team2);
 
     let pointsDifferenceForNextPlayer;
-    if (this.nextPlayer === 1 || this.nextPlayer === 3) {
+    if (player === 1 || player === 3) {
       pointsDifferenceForNextPlayer = pointsTeam1 - pointsTeam2;
     }
     else {
@@ -415,7 +415,7 @@ class Sueca extends CardGame {
 
     let winningBonus = 0;
     let winner = this._getWinners();
-    if (winner && _.includes(winner, this.nextPlayer)) {
+    if (winner && _.includes(winner, player)) {
       winningBonus = 1000;
     }
     else if (winner) {

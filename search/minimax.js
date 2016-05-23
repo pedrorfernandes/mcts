@@ -18,8 +18,8 @@ class MinimaxNode extends Node {
     return this.children;
   }
 
-  getHeuristicValue() {
-    return this.game.getGameValue();
+  getHeuristicValue(player) {
+    return this.game.getGameValue(player);
   }
 
   isAdversaryMove() {
@@ -69,7 +69,6 @@ class Minimax extends SearchAlgorithm {
 
     let moveVotes = {};
     let children = this.rootNode.getRandomEventChildNodes();
-    console.log(children.length);
     for(let childIndex = 0; childIndex < children.length; childIndex++) {
       let child = children[childIndex];
       let bestValue = this.minimax(child, self.depth - 1, -Infinity, +Infinity);
@@ -82,6 +81,9 @@ class Minimax extends SearchAlgorithm {
           moveVotes[c.move] += 1;
         }
       });
+
+      // let the gc clean up
+      children[childIndex] = undefined;
     }
 
     return this.getMostVotedNode(moveVotes).move;
@@ -89,7 +91,7 @@ class Minimax extends SearchAlgorithm {
 
   minimax(node, depth, alpha, beta) {
     if (node.isTerminal() || depth === 0) {
-      node.value = node.getHeuristicValue();
+      node.value = node.getHeuristicValue(this.player);
       return node.value;
     }
 
