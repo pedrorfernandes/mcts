@@ -64,7 +64,7 @@ class DeterminizedUCT extends SearchAlgorithm {
   }
 
   selectMove() {
-    this.rootNodes = [];
+    this.moveVotes = {};
 
     let initialNode = new Node({ game: this.game, depth: 0, mcts: this });
 
@@ -83,30 +83,26 @@ class DeterminizedUCT extends SearchAlgorithm {
         selectedNode.backPropagate(endGame);
       }
 
-      this.rootNodes.push(rootNode);
-    }
+      let bestMove = rootNode.bestChild(NO_EXPLORATION).move;
 
-    function addStatistics(receiverNode, node) {
-      receiverNode.visits += node.visits;
-      receiverNode.wins += node.wins;
-      receiverNode.avails += node.avails;
-    }
-
-    this.rootNode = this.rootNodes.reduce(function updateStats(rootNode, node, index) {
-      if (index === 0) {
-        return rootNode;
+      if (!this.moveVotes[bestMove]) {
+        this.moveVotes[bestMove] = 0;
       }
+      this.moveVotes[bestMove] += 1;
+    }
 
-      addStatistics(rootNode, node);
+    let maxVotes = _(this.moveVotes).map(value => value).max();
+    let mostVoted = _.reduce(this.moveVotes, (acc, count, move) => {
+      if (count === maxVotes) {
+        acc.push(move);
+      }
+      return acc;
+    }, []);
 
-      rootNode.children.forEach(function(child, index) {
-        addStatistics(child, node.children[index]);
-      });
-
-      return rootNode;
-    }, this.rootNodes[0]);
-
-    return this.rootNode.bestChild(NO_EXPLORATION).move;
+    if (mostVoted.length === 1) {
+      return mostVoted[0];
+    }
+    return sample(mostVoted, this.rng);
   }
 
   select(node, explorationConstant) {
