@@ -19,6 +19,10 @@ module.exports = {
   },
 
   algorithms: {
+    'uct': {
+      name: 'UCT',
+      module: __dirname + '/search/uct'
+    },
     'ismcts': {
       name: 'ISMCTS',
       module: __dirname + '/search/ismcts'
