@@ -445,7 +445,7 @@ class Hearts extends CardGame {
       winningBonus = -1000;
     }
 
-    return winningBonus + this.getScore([player]);
+    return winningBonus + (26 - this.getScore([player]));
   }
 
   getPrettyPlayerHand(player) {
