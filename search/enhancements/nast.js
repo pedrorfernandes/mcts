@@ -65,16 +65,30 @@ function simulateWithNGrams(simulationPolicy) {
     let possibleMoves = deterministicGame.getPossibleMoves();
     let move;
     let moveHistory = getMoveNGram(expandedNode, this.nGramLength) || [];
+    this.simulatedMoves = [];
+
     while (!_.isEmpty(possibleMoves)) {
       moveHistory.shift();
       let playerNGramAverages = this.nGramAverages[deterministicGame.getNextPlayer()];
       move = selectWithSimulationPolicy(simulationPolicy, possibleMoves, this.rng, moveHistory, playerNGramAverages, this.nGramLength);
       moveHistory.push(move);
+
+      if (moveHistory.length !== this.nGramLength - 1) {
+        this.simulatedMoves.push({ player: deterministicGame.nextPlayer, nGram: moveHistory.join('') });
+      }
+
       deterministicGame.performMove(move);
       possibleMoves = deterministicGame.getPossibleMoves();
     }
-    return deterministicGame;
 
+    let getReward = _.memoize(expandedNode.getReward.bind(null), (game, player) => player);
+
+    this.simulatedMoves.forEach(simulatedMove => {
+      let reward = getReward(deterministicGame, simulatedMove.player);
+      updateNGramStats(this.nGramAverages, simulatedMove.player, simulatedMove.nGram, reward);
+    });
+
+    return deterministicGame;
   }
 
 }
@@ -87,6 +101,20 @@ function initializeNGramVariables(searchAlgorithmInstance, nGramLength) {
     nGramAverages[playerIndex + 1] = new Map();
     return nGramAverages;
   }, {});
+
+  searchAlgorithmInstance.simulatedMoves = [];
+}
+
+function updateNGramStats(nGramAverages, player, nGram, reward) {
+  let nGramAverage = nGramAverages[player].get(nGram);
+
+  if (!nGramAverage) {
+    nGramAverage = { reward: 0, count: 0 };
+    nGramAverages[player].set(nGram, nGramAverage);
+  }
+
+  nGramAverage.reward += reward;
+  nGramAverage.count += 1;
 }
 
 let NASTBackpropagateMixin = (superclass) => class extends superclass {
@@ -104,15 +132,7 @@ let NASTBackpropagateMixin = (superclass) => class extends superclass {
 
         nGram = nGram.join('');
 
-        let nGramAverage = this.mcts.nGramAverages[node.player].get(nGram);
-
-        if (!nGramAverage) {
-          nGramAverage = { reward: 0, count: 0 };
-          this.mcts.nGramAverages[node.player].set(nGram, nGramAverage);
-        }
-
-        nGramAverage.reward += reward;
-        nGramAverage.count += 1;
+        updateNGramStats(this.mcts.nGramAverages, node.player, nGram, reward);
       }
 
       node = node.parent;
@@ -130,7 +150,7 @@ module.exports = {
 
     let getSimulationPolicyFunction = simulationPolicies[simulationPolicyName];
     let simulationPolicy = getSimulationPolicyFunction(options);
-    
+
     initializeNGramVariables(searchAlgorithmInstance, nGramLength);
 
     searchAlgorithmInstance.simulate = simulateWithNGrams(simulationPolicy);
