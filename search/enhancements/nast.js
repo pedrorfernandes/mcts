@@ -65,7 +65,7 @@ function simulateWithNGrams(simulationPolicy) {
     let possibleMoves = deterministicGame.getPossibleMoves();
     let move;
     let moveHistory = getMoveNGram(expandedNode, this.nGramLength) || [];
-    this.simulatedMoves = [];
+    let simulatedMoves = [];
 
     while (!_.isEmpty(possibleMoves)) {
       moveHistory.shift();
@@ -74,7 +74,7 @@ function simulateWithNGrams(simulationPolicy) {
       moveHistory.push(move);
 
       if (moveHistory.length !== this.nGramLength - 1) {
-        this.simulatedMoves.push({ player: deterministicGame.nextPlayer, nGram: moveHistory.join('') });
+        simulatedMoves.push({ player: deterministicGame.nextPlayer, nGram: moveHistory.join('') });
       }
 
       deterministicGame.performMove(move);
@@ -83,7 +83,7 @@ function simulateWithNGrams(simulationPolicy) {
 
     let getReward = _.memoize(expandedNode.getReward.bind(null), (game, player) => player);
 
-    this.simulatedMoves.forEach(simulatedMove => {
+    simulatedMoves.forEach(simulatedMove => {
       let reward = getReward(deterministicGame, simulatedMove.player);
       updateNGramStats(this.nGramAverages, simulatedMove.player, simulatedMove.nGram, reward);
     });
@@ -101,8 +101,6 @@ function initializeNGramVariables(searchAlgorithmInstance, nGramLength) {
     nGramAverages[playerIndex + 1] = new Map();
     return nGramAverages;
   }, {});
-
-  searchAlgorithmInstance.simulatedMoves = [];
 }
 
 function updateNGramStats(nGramAverages, player, nGram, reward) {
