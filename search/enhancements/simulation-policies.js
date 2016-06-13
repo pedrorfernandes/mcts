@@ -107,7 +107,7 @@ function createRouletteSimulationPolicyFunction(options) {
 let toUCB1Value = function (nGramStats, parentCount, explorationValue) {
   // nGramStats = { reward: 0, count: 0 };
   if (explorationValue !== 0) {
-    return (nGramStats.reward / nGramStats.count) + explorationValue * Math.sqrt(2 * Math.log(parentCount) / nGramStats.count);
+    return (nGramStats.reward / nGramStats.count) + explorationValue * Math.sqrt(Math.log(parentCount) / nGramStats.count);
   } else {
     return (nGramStats.reward / nGramStats.count);
   }
