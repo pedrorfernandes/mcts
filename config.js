@@ -62,6 +62,11 @@ module.exports = {
       'nast': {
         module: __dirname + '/search/enhancements/nast',
         functionName: 'decorateSearchAlgorithm'
+      },
+
+      'epic': {
+        module: __dirname + '/search/enhancements/epic',
+        functionName: 'decorateSearchAlgorithm'
       }
     },
 
