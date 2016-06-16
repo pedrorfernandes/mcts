@@ -8,7 +8,7 @@ class SearchAlgorithm {
     this.game = game;
     this.player = typeof player == 'undefined' ? 0 : player;
 
-    let enhancements = options.enhancements || [];
+    let enhancements = Array.isArray(options.enhancements) ? options.enhancements : [];
 
     enhancements.forEach(enhancementOptions => {
 
