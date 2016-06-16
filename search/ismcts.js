@@ -31,7 +31,7 @@ class ISMCTSNode extends Node {
 
   getUCB1(explorationConstant, node) {
     if (explorationConstant !== 0) {
-      return (node.wins / node.visits) + explorationConstant * Math.sqrt(Math.log(node.avails) / node.visits);
+      return (node.wins / node.visits) + 2 * explorationConstant * Math.sqrt(Math.log(node.avails) / node.visits);
     } else {
       return (node.wins / node.visits);
     }
@@ -62,7 +62,7 @@ class ISMCTS extends SearchAlgorithm {
     super(game, player, options);
     this.iterations = options.iterations || 1000;
     this.rng = options.rng ? options.rng : randomGenerator(null, {state: true});
-    this.explorationConstant = _.get(options, 'explorationConstant', (Math.sqrt(2) / 2));
+    this.explorationConstant = _.get(options, 'explorationConstant', (1 / Math.sqrt(2)));
   }
 
   getBasicNodeClass() {

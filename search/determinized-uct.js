@@ -36,7 +36,7 @@ class DeterminizedUCTNode extends Node {
 
   getUCB1(explorationConstant, node) {
     if (explorationConstant !== 0) {
-      return (node.wins / node.visits) + explorationConstant * Math.sqrt(2 * Math.log(node.parent.visits) / node.visits);
+      return (node.wins / node.visits) + 2 * explorationConstant * Math.sqrt(Math.log(node.parent.visits) / node.visits);
     } else {
       return (node.wins / node.visits);
     }
@@ -56,7 +56,7 @@ class DeterminizedUCT extends SearchAlgorithm {
     this.iterations = configs.iterations || 100;
     this.determinizations = configs.determinizations || 100;
     this.rng = configs.rng ? configs.rng : randomGenerator(null, { state: true });
-    this.explorationConstant = _.get(configs, 'explorationConstant', (Math.sqrt(2) / 2) );
+    this.explorationConstant = _.get(configs, 'explorationConstant', (1 / Math.sqrt(2)));
   }
 
   getBasicNodeClass() {
