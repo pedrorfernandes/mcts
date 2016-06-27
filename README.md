@@ -3,6 +3,12 @@ MCTS
 
 This library implements a simple [Monte Carlo Tree Search](http://en.wikipedia.org/wiki/Monte_Carlo_tree_search) for games.
 
+## Datasets ##
+
+The datasets generated throughout the dissertation are available [here](https://mega.nz/#F!2ERjjBSI!5YkiicxAxEQfAA16NHs_3Q).
+
+To use a dataset, install couchbase, restore the database from any folder and boot the botwars framework. All game states are fully queriable through a N1QL query editor and also accessible in the web interface.
+
 ## Usage ##
 
 Implement a class that has the following methods:
